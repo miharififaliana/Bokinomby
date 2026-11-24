@@ -30,7 +30,7 @@ class Bovin extends Model
 
     public function proprietaire(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Personne::class, 'proprietaire_id');
     }
 
     public function quartier(): BelongsTo

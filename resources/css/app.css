@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+    }
+
+    body {
+        @apply bg-base-100 font-sans text-base-content antialiased;
+    }
+
+    ::selection {
+        @apply bg-primary text-primary-content;
+    }
+
+    :focus-visible {
+        @apply outline-none ring-2 ring-secondary ring-offset-2 ring-offset-base-100;
+    }
+}
+
+@layer components {
+    .hairline {
+        @apply border-base-content/15;
+    }
+
+    .ledger-row {
+        @apply flex items-baseline justify-between gap-6 border-t border-base-content/15 py-4;
+    }
+}

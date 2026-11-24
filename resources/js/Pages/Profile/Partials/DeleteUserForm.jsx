@@ -48,39 +48,36 @@ export default function DeleteUserForm({ className = '' }) {
     return (
         <section className={`space-y-6 ${className}`}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Delete Account
+                <h2 className="font-display text-2xl tracking-tight text-error">
+                    Supprimer le compte
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
+                <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-base-content/60">
+                    La suppression est définitive. Les données rattachées à
+                    votre compte seront perdues. Téléchargez ce que vous
+                    souhaitez conserver avant de continuer.
                 </p>
             </header>
 
             <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
+                Supprimer mon compte
             </DangerButton>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
-                <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Are you sure you want to delete your account?
+                <form onSubmit={deleteUser} className="p-6 sm:p-8">
+                    <h2 className="font-display text-2xl tracking-tight">
+                        Confirmer la suppression
                     </h2>
 
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                    <p className="mt-2 text-sm leading-relaxed text-base-content/60">
+                        Cette action est irréversible. Saisissez votre mot de
+                        passe pour supprimer définitivement votre compte.
                     </p>
 
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="password"
-                            value="Password"
+                            value="Mot de passe"
                             className="sr-only"
                         />
 
@@ -93,24 +90,23 @@ export default function DeleteUserForm({ className = '' }) {
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
-                            className="mt-1 block w-3/4"
+                            className="mt-1 block w-full"
                             isFocused
-                            placeholder="Password"
+                            placeholder="Votre mot de passe"
                         />
 
-                        <InputError
-                            message={errors.password}
-                            className="mt-2"
-                        />
+                        <InputError message={errors.password} />
                     </div>
 
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-7 flex justify-end gap-3">
                         <SecondaryButton onClick={closeModal}>
-                            Cancel
+                            Annuler
                         </SecondaryButton>
 
-                        <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
+                        <DangerButton disabled={processing}>
+                            {processing
+                                ? 'Suppression…'
+                                : 'Supprimer définitivement'}
                         </DangerButton>
                     </div>
                 </form>

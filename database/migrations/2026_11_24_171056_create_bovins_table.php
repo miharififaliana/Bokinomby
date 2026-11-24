@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('numero_boucle')->unique();
 
             $table->foreignId('proprietaire_id')
-                  ->constrained('proprietaires');
+                  ->constrained('users')
+                  ->cascadeOnDelete();
 
             $table->enum('sexe', ['male', 'femelle']);
 

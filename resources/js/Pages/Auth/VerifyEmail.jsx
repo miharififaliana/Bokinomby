@@ -13,37 +13,40 @@ export default function VerifyEmail({ status }) {
 
     return (
         <GuestLayout>
-            <Head title="Email Verification" />
+            <Head title="Vérifier votre e-mail" />
 
-            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Thanks for signing up! Before getting started, could you verify
-                your email address by clicking on the link we just emailed to
-                you? If you didn't receive the email, we will gladly send you
-                another.
+            <div className="mb-8">
+                <h1 className="font-display text-4xl tracking-tight">
+                    Vérifier votre e-mail
+                </h1>
+                <p className="mt-3 text-sm leading-relaxed text-base-content/60">
+                    Cliquez sur le lien envoyé à votre adresse e-mail pour
+                    activer votre accès. S'il n'est pas arrivé, demandez-en un
+                    nouveau.
+                </p>
             </div>
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-sm font-medium text-green-600 dark:text-green-400">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
+                <div className="alert mb-6 rounded-xl border border-success/25 bg-success/10 py-3 text-sm text-success">
+                    Un nouveau lien de vérification vient d'être envoyé.
                 </div>
             )}
 
-            <form onSubmit={submit}>
-                <div className="mt-4 flex items-center justify-between">
-                    <PrimaryButton disabled={processing}>
-                        Resend Verification Email
-                    </PrimaryButton>
+            <form onSubmit={submit} className="space-y-5">
+                <PrimaryButton className="w-full" disabled={processing}>
+                    {processing ? 'Envoi…' : 'Renvoyer le lien'}
+                </PrimaryButton>
 
+                <p className="border-t border-base-content/10 pt-6 text-sm">
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                        className="font-medium text-base-content/55 underline-offset-4 hover:text-primary hover:underline"
                     >
-                        Log Out
+                        Se déconnecter
                     </Link>
-                </div>
+                </p>
             </form>
         </GuestLayout>
     );
