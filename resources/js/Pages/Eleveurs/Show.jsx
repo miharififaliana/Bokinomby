@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
 
 function initials(name = '') {
     return name
@@ -26,16 +27,22 @@ function sexLabel(sexe) {
     return sexe === 'male' ? 'Mâle' : 'Femelle';
 }
 
-export default function Show({ personne, bovins, stats, success }) {
+export default function Show({ utilisateur, bovins, stats, success }) {
     const reduceMotion = useReducedMotion();
     const hasBovins = bovins.data.length > 0;
+    const { delete: destroy, processing: deleting } = useForm();
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
+    const handleDelete = () => {
+        destroy(route('utilisateurs.destroy', utilisateur.id));
+    };
     const createHref = route('bovins.create', {
-        proprietaire: personne.id,
+        proprietaire: utilisateur.id,
     });
 
     return (
         <AuthenticatedLayout>
-            <Head title={personne.nom} />
+            <Head title={utilisateur.name} />
 
             <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -44,56 +51,96 @@ export default function Show({ personne, bovins, stats, success }) {
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <Link
-                        href={route('personnes.index')}
+                        href={route('utilisateurs.index')}
                         className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 underline-offset-4 transition-colors hover:text-base-content hover:underline"
                     >
                         <span aria-hidden="true">←</span>
-                        Toutes les personnes
+                        Tous les éleveurs
                     </Link>
 
                     <div className="mt-8 flex flex-wrap items-start justify-between gap-6">
                         <div className="flex items-start gap-5">
                             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary font-display text-lg text-primary-content">
-                                {initials(personne.nom)}
+                                {initials(utilisateur.name)}
                             </span>
 
                             <div>
                                 <p className="text-sm text-base-content/45">
-                                    Personne propriétaire
+                                    Éleveur
                                 </p>
                                 <h1 className="mt-2 font-display text-[clamp(2.2rem,4.6vw,3.6rem)] leading-[1.03] tracking-[-0.02em]">
-                                    {personne.nom}
+                                    {utilisateur.name}
                                 </h1>
 
                                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-base-content/55">
-                                    {personne.telephone ? (
+                                    <span className="font-medium text-base-content/70">
+                                        CIN{' '}
+                                        {utilisateur.cin || 'non renseigné'}
+                                    </span>
+                                    {utilisateur.email && (
                                         <a
-                                            href={`tel:${personne.telephone}`}
+                                            href={`mailto:${utilisateur.email}`}
                                             className="underline-offset-4 hover:text-base-content hover:underline"
                                         >
-                                            {personne.telephone}
-                                        </a>
-                                    ) : (
-                                        <span>Téléphone non renseigné</span>
-                                    )}
-                                    {personne.email && (
-                                        <a
-                                            href={`mailto:${personne.email}`}
-                                            className="underline-offset-4 hover:text-base-content hover:underline"
-                                        >
-                                            {personne.email}
+                                            {utilisateur.email}
                                         </a>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <Link
-                            href={createHref}
-                            className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
-                        >
-                            Assigner un bovin
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                                href={route('utilisateurs.edit', utilisateur.id)}
+                                className="btn btn-outline h-11 rounded-full border-base-content/20 px-5 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
+                            >
+                                Modifier
+                            </Link>
+                            <Link
+                                href={createHref}
+                                className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
+                            >
+                                Assigner un bovin
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setConfirmDelete(true)}
+                                className="btn btn-error btn-outline h-11 rounded-full px-5 text-sm font-semibold normal-case"
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+
+                        {confirmDelete && (
+                            <div className="mt-6 rounded-2xl border border-error/30 bg-error/10 px-5 py-4 text-sm text-base-content/70">
+                                <p className="font-medium text-error">
+                                    Supprimer cet éleveur ?
+                                </p>
+                                <p className="mt-1 leading-relaxed">
+                                    Cette action supprimera également ses bovins
+                                    assignés. Confirmez pour continuer.
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={deleting}
+                                        onClick={handleDelete}
+                                        className="btn btn-error h-10 rounded-full px-5 text-sm font-semibold normal-case"
+                                    >
+                                        {deleting
+                                            ? 'Suppression…'
+                                            : 'Confirmer la suppression'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmDelete(false)}
+                                        className="btn btn-ghost h-10 rounded-full px-5 text-sm font-semibold normal-case"
+                                    >
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 
@@ -138,7 +185,7 @@ export default function Show({ personne, bovins, stats, success }) {
                             id="cheptel-heading"
                             className="text-sm font-semibold text-base-content/45"
                         >
-                            Bovins de {personne.nom}
+                            Bovins de {utilisateur.name}
                         </h2>
                         {hasBovins && (
                             <p className="text-xs text-base-content/45">
@@ -151,9 +198,10 @@ export default function Show({ personne, bovins, stats, success }) {
                         <>
                             <div className="mt-3 border-t border-base-content/15">
                                 {bovins.data.map((bovin) => (
-                                    <article
+                                    <Link
                                         key={bovin.id}
-                                        className="grid gap-3 border-b border-base-content/15 py-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto] sm:items-center sm:gap-6"
+                                        href={route('bovins.show', bovin.id)}
+                                        className="grid gap-3 border-b border-base-content/15 py-5 transition-colors hover:bg-base-200/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto] sm:items-center sm:gap-6"
                                     >
                                         <div className="min-w-0">
                                             <p className="font-display text-xl tracking-tight">
@@ -170,36 +218,43 @@ export default function Show({ personne, bovins, stats, success }) {
 
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-medium">
-                                                {bovin.quartier.name}
+                                                {bovin.commune?.name ?? '—'}
                                             </p>
                                             <p className="mt-0.5 truncate text-xs text-base-content/55">
-                                                {bovin.quartier.commune.name}{' '}
+                                                {bovin.commune?.district?.name ??
+                                                    '—'}{' '}
                                                 ·{' '}
-                                                {
-                                                    bovin.quartier.commune
-                                                        .district.name
-                                                }
+                                                {bovin.commune?.district?.region
+                                                    ?.nom ?? '—'}
                                             </p>
                                         </div>
 
                                         <span
-                                            className={`badge w-fit border-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                                            className={`inline-flex w-fit items-center gap-2 text-xs font-semibold ${
                                                 bovin.date_deces
-                                                    ? 'bg-base-content/10 text-base-content/55'
-                                                    : 'bg-success/10 text-success'
+                                                    ? 'text-base-content/45'
+                                                    : 'text-success'
                                             }`}
                                         >
+                                            <span
+                                                aria-hidden="true"
+                                                className={`h-2 w-2 rounded-full ${
+                                                    bovin.date_deces
+                                                        ? 'bg-base-content/30'
+                                                        : 'bg-success'
+                                                }`}
+                                            />
                                             {bovin.date_deces
-                                                ? 'Décédé'
-                                                : 'Actif'}
+                                                ? 'Mort'
+                                                : 'Vivant'}
                                         </span>
-                                    </article>
+                                    </Link>
                                 ))}
                             </div>
 
                             {bovins.last_page > 1 && (
                                 <nav
-                                    aria-label="Pagination des bovins de la personne"
+                                    aria-label="Pagination des bovins de l'utilisateur"
                                     className="mt-6 flex items-center justify-between gap-4"
                                 >
                                     {bovins.prev_page_url ? (
@@ -239,7 +294,7 @@ export default function Show({ personne, bovins, stats, success }) {
                                 Aucun bovin assigné.
                             </p>
                             <p className="mx-auto mt-2 max-w-[42ch] text-sm leading-relaxed text-base-content/55">
-                                Cette personne peut recevoir plusieurs bêtes.
+                                Cet utilisateur peut recevoir plusieurs bêtes.
                                 Ouvrez une fiche bovine pour lui en assigner
                                 une.
                             </p>

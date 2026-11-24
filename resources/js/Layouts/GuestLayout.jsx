@@ -27,8 +27,8 @@ export default function GuestLayout({ children }) {
                         Une bête sans dossier est une bête sans histoire.
                     </p>
                     <p className="mt-6 text-sm leading-relaxed text-primary-content/70">
-                        Identifiez chaque animal, rattachez-le à son quartier
-                        et gardez son suivi sanitaire au même endroit.
+                        Identifiez chaque animal, rattachez-le à sa commune et
+                        gardez son suivi sanitaire au même endroit.
                     </p>
                 </div>
 

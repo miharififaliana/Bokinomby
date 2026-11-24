@@ -18,14 +18,15 @@ L'interface est construite avec **Laravel 11**, **Inertia.js**, **React 18**,
   de passe, suppression du compte avec confirmation par mot de passe.
 - **Rôles** : `admin` et `employer` (valeur par défaut). Le rôle est affiché
   dans l'interface ; il ne restreint pas encore l'accès aux données.
-- **Personnes** : création d'un propriétaire sans compte de connexion, liste des
-  personnes et fiche détaillant tous les bovins qui lui sont assignés.
+- **Utilisateurs** : chaque propriétaire est un utilisateur (nom, CIN,
+  e-mail) ; liste recherchable par CIN et fiche détaillant tous les bovins qui
+  lui sont assignés.
 - **Registre bovin** : liste paginée du cheptel et formulaire d'enregistrement
-  d'un bovin (personne propriétaire, boucle unique, sexe, dates, quartier,
-  signes particuliers, dossier de santé). La modification et la suppression des
-  fiches ne sont pas encore exposées.
+  d'un bovin (utilisateur propriétaire, boucle générée automatiquement, sexe,
+  dates, localisation administrative, signes particuliers, dossier de santé).
+  La modification et la suppression des fiches ne sont pas encore exposées.
 - **Interface premium** : page d'accueil éditoriale, pages d'authentification,
-  personnes, registre, tableau de bord et profil, avec animations respectant
+  utilisateurs, registre, tableau de bord et profil, avec animations respectant
   `prefers-reduced-motion`.
 
 ## Prérequis
@@ -135,10 +136,10 @@ protégée.
 | `GET` | `/bovins` | Registre bovin (connecté) |
 | `GET` | `/bovins/create` | Formulaire d'enregistrement d'un bovin |
 | `POST` | `/bovins` | Enregistrement d'un bovin |
-| `GET` | `/personnes` | Liste des personnes propriétaires |
-| `GET` | `/personnes/create` | Formulaire de création d'une personne |
-| `POST` | `/personnes` | Enregistrement d'une personne |
-| `GET` | `/personnes/{personne}` | Fiche d'une personne et de ses bovins |
+| `GET` | `/utilisateurs` | Liste des utilisateurs propriétaires |
+| `GET` | `/utilisateurs/create` | Formulaire de création d'un utilisateur |
+| `POST` | `/utilisateurs` | Enregistrement d'un utilisateur |
+| `GET` | `/utilisateurs/{utilisateur}` | Fiche d'un utilisateur et de ses bovins |
 | `GET` | `/profile` | Profil (connecté) |
 | `PATCH` | `/profile` | Mise à jour du nom et de l'e-mail |
 | `DELETE` | `/profile` | Suppression du compte |
@@ -171,30 +172,29 @@ accéder au tableau de bord. Pour imposer la vérification, décommentez
 `implements MustVerifyEmail` dans `app/Models/User.php` et ajoutez l'interface
 correspondante.
 
-## Personnes et affectation des bovins
+## Utilisateurs et affectation des bovins
 
-Une personne est un propriétaire inscrit au registre ; elle ne possède pas
-forcément de compte de connexion. Le parcours habituel est :
+Chaque propriétaire est un utilisateur de l'application, identifié par son CIN.
+Il n'existe plus de table `personnes` séparée. Le parcours habituel est :
 
-1. **Ajouter une personne** depuis `/personnes` (nom obligatoire, téléphone et
-   e-mail facultatifs) ;
+1. **Ajouter un utilisateur** depuis `/utilisateurs` (nom, CIN et e-mail
+   obligatoires, mot de passe pour la connexion) ;
 2. ouvrir sa fiche, puis cliquer sur **Assigner un bovin** ;
-3. renseigner la boucle et le dossier du bovin ; la personne est
-   présélectionnée ;
+3. renseigner le dossier du bovin ; l'utilisateur est présélectionné ;
 4. répéter l'opération autant de fois que nécessaire. Tous ses bovins
    apparaissent sur sa fiche, avec les compteurs total/femelles/mâles.
 
-Une personne peut donc détenir plusieurs bovins. Le propriétaire se choisit
-dans le formulaire bovin ; il n'est plus lié au compte de connexion. La
-suppression d'une personne supprime ses bovins en cascade.
+Un utilisateur peut donc détenir plusieurs bovins. Le propriétaire se choisit
+dans le formulaire bovin. La suppression d'un utilisateur supprime ses bovins
+en cascade.
 
 ## Registre bovin
 
 Depuis `/bovins`, un utilisateur connecté consulte le registre et ouvre une
 nouvelle fiche avec **Enregistrer un bovin**. Les champs sont :
 
-- **personne propriétaire** obligatoire ;
-- **numéro de boucle** obligatoire et unique dans tout le registre ;
+- **utilisateur propriétaire** obligatoire ;
+- **numéro de boucle** généré automatiquement (code postal + numéro du bovin) ;
 - **sexe** (`femelle` ou `male`) et **date de naissance** ;
 - **date de décès** facultative, qui ne peut pas précéder la naissance ;
 - **district → commune → quartier**, avec des listes dépendantes ;
@@ -215,8 +215,7 @@ les compteurs (total, femelles, mâles) portent sur l'ensemble du registre.
 
 | Table | Champs principaux |
 | ----- | ----------------- |
-| `users` | `name`, `email`, `password`, `role` (`admin` / `employer`) |
-| `personnes` | `nom`, `telephone`, `email` (coordonnées facultatives) |
+| `users` | `name`, `email`, `cin`, `password`, `role` (`admin` / `employer`) |
 | `districts` | `name` |
 | `communes` | `district_id`, `name` |
 | `quartiers` | `commune_id`, `name` |
@@ -225,14 +224,14 @@ les compteurs (total, femelles, mâles) portent sur l'ensemble du registre.
 `signe_particulier` et `dossier_sante` sont des listes JSON : chaque ligne
 saisie dans le formulaire devient une entrée.
 
-La chaîne est `Personne → Bovin` et `District → Commune → Quartier → Bovin`.
-Un bovin appartient à une personne via `proprietaire_id` ; une personne peut
-avoir plusieurs bovins. La suppression d'une personne supprime ses bovins en
+La chaîne est `User → Bovin` et `District → Commune → Bovin`.
+Un bovin appartient à un utilisateur via `proprietaire_id` ; un utilisateur peut
+avoir plusieurs bovins. La suppression d'un utilisateur supprime ses bovins en
 cascade.
 
-La migration `2026_11_24_180100_link_bovins_to_personnes_table` reprend les
-anciens propriétaires liés à un compte utilisateur et crée automatiquement leur
-fiche personne.
+La migration `2026_11_25_000000_use_users_as_bovin_owners` reprend les données
+de l'ancienne table `personnes`, rattache les bovins aux utilisateurs
+correspondants (par CIN puis par e-mail), puis supprime la table `personnes`.
 
 Commandes utiles :
 
@@ -257,9 +256,9 @@ pas à la base de développement.
 
 ```text
 app/
-  Http/Controllers/          # Authentification, profil, personnes, bovins
+  Http/Controllers/          # Authentification, profil, utilisateurs, bovins
   Http/Middleware/           # Partage des props Inertia
-  Models/                    # User, Personne, Bovin, Quartier, Commune, District
+  Models/                    # User, Bovin, Province, Region, District, Commune
 database/
   migrations/                # Schéma SQLite/MySQL
   seeders/                   # Compte et localités de démonstration
@@ -269,10 +268,10 @@ resources/
   js/
     Components/              # Boutons, champs, boucle d'oreille (EarTag)
     Layouts/                 # Coques invité et authentifié
-    Pages/                   # Accueil, Auth, Bovins, Personnes, Dashboard, Profile
+    Pages/                   # Accueil, Auth, Bovins, Utilisateurs, Dashboard, Profile
   views/app.blade.php        # Document racine Inertia
 routes/
-  web.php                    # Accueil, dashboard, personnes, registre, profil
+  web.php                    # Accueil, dashboard, utilisateurs, registre, profil
   auth.php                   # Routes d'authentification
 ```
 

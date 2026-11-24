@@ -18,8 +18,8 @@ class Commune extends Model
         return $this->belongsTo(District::class);
     }
 
-    public function quartiers(): HasMany
+    public function bovins(): HasMany
     {
-        return $this->hasMany(Quartier::class);
+        return $this->hasMany(Bovin::class);
     }
 }

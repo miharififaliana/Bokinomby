@@ -21,7 +21,6 @@ class StoreBovinRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'numero_boucle' => trim((string) $this->input('numero_boucle')),
             'signe_particulier' => $this->lines('signe_particulier'),
             'dossier_sante' => $this->lines('dossier_sante'),
         ]);
@@ -33,21 +32,15 @@ class StoreBovinRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'numero_boucle' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('bovins', 'numero_boucle'),
-            ],
             'proprietaire_id' => [
                 'required',
                 'integer',
-                Rule::exists('personnes', 'id'),
+                Rule::exists('users', 'id')->where('role', 'employer'),
             ],
             'sexe' => ['required', Rule::in(['male', 'femelle'])],
             'date_naissance' => ['required', 'date', 'before_or_equal:today'],
             'date_deces' => ['nullable', 'date', 'after_or_equal:date_naissance'],
-            'quartier_id' => ['required', 'integer', Rule::exists('quartiers', 'id')],
+            'commune_id' => ['required', 'integer', Rule::exists('communes', 'id')],
             'signe_particulier' => ['nullable', 'array', 'max:10'],
             'signe_particulier.*' => ['string', 'max:120'],
             'dossier_sante' => ['nullable', 'array', 'max:20'],

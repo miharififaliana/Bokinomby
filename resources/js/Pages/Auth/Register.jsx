@@ -9,6 +9,7 @@ export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
+        cin: '',
         password: '',
         password_confirmation: '',
     });
@@ -31,7 +32,7 @@ export default function Register() {
                 </h1>
                 <p className="mt-3 text-sm leading-relaxed text-base-content/60">
                     Créez votre accès au registre. Vous pourrez y tenir les
-                    fiches de votre cheptel, quartier par quartier.
+                    fiches de votre cheptel, commune par commune.
                 </p>
             </div>
 
@@ -68,6 +69,24 @@ export default function Register() {
                     />
 
                     <InputError message={errors.email} />
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="cin" value="Numéro CIN" />
+
+                    <TextInput
+                        id="cin"
+                        name="cin"
+                        value={data.cin}
+                        className="mt-2 uppercase tracking-wide"
+                        placeholder="101234567890"
+                        maxLength={12}
+                        autoComplete="off"
+                        onChange={(e) => setData('cin', e.target.value)}
+                        required
+                    />
+
+                    <InputError message={errors.cin} />
                 </div>
 
                 <div>

@@ -59,10 +59,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Registre
                             </NavLink>
                             <NavLink
-                                href={route('personnes.index')}
-                                active={route().current('personnes.*')}
+                                href={route('utilisateurs.index')}
+                                active={route().current('utilisateurs.*')}
                             >
-                                Personnes
+                                Éleveurs
                             </NavLink>
                             <NavLink
                                 href={route('profile.edit')}
@@ -196,10 +196,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Registre bovin
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink
-                                    href={route('personnes.index')}
-                                    active={route().current('personnes.*')}
+                                    href={route('utilisateurs.index')}
+                                    active={route().current('utilisateurs.*')}
                                 >
-                                    Personnes
+                                    Utilisateurs
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink
                                     href={route('profile.edit')}

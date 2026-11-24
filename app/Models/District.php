@@ -13,6 +13,7 @@ class District extends Model
     protected $fillable = [
         'region_id',
         'name',
+        'code_postal',
     ];
 
     public function communes(): HasMany

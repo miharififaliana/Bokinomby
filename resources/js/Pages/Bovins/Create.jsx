@@ -33,8 +33,8 @@ const textareaClass =
     'textarea textarea-bordered min-h-24 w-full rounded-xl border-base-content/20 bg-base-100 text-sm leading-relaxed focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20';
 
 export default function Create({
-    districts,
-    personnes,
+    provinces = [],
+    utilisateurs = [],
     selectedProprietaireId,
 }) {
     const reduceMotion = useReducedMotion();
@@ -42,17 +42,31 @@ export default function Create({
         proprietaire_id: selectedProprietaireId
             ? String(selectedProprietaireId)
             : '',
-        numero_boucle: '',
         sexe: '',
         date_naissance: '',
         date_deces: '',
-        quartier_id: '',
+        commune_id: '',
         signe_particulier: '',
         dossier_sante: '',
     });
 
+    const [provinceId, setProvinceId] = useState('');
+    const [regionId, setRegionId] = useState('');
     const [districtId, setDistrictId] = useState('');
-    const [communeId, setCommuneId] = useState('');
+
+    const province = useMemo(
+        () => provinces.find((item) => String(item.id) === provinceId),
+        [provinces, provinceId],
+    );
+
+    const regions = province?.regions ?? [];
+
+    const region = useMemo(
+        () => regions.find((item) => String(item.id) === regionId),
+        [regions, regionId],
+    );
+
+    const districts = region?.districts ?? [];
 
     const district = useMemo(
         () => districts.find((item) => String(item.id) === districtId),
@@ -60,21 +74,18 @@ export default function Create({
     );
 
     const communes = district?.communes ?? [];
-
-    const commune = useMemo(
-        () => communes.find((item) => String(item.id) === communeId),
-        [communes, communeId],
+    const commune = communes.find(
+        (item) => String(item.id) === data.commune_id,
     );
 
-    const quartiers = commune?.quartiers ?? [];
-    const quartier = quartiers.find(
-        (item) => String(item.id) === data.quartier_id,
-    );
+    const numeroPreview = district
+        ? `${district.code_postal ?? '000'}-…`
+        : 'AUTO';
 
     const sexeLabel =
         data.sexe === 'male' ? 'Mâle' : data.sexe === 'femelle' ? 'Femelle' : '—';
 
-    const proprietaire = personnes.find(
+    const proprietaire = utilisateurs.find(
         (item) => String(item.id) === data.proprietaire_id,
     );
 
@@ -109,10 +120,10 @@ export default function Create({
                         Ouvrir la boucle d'une bête.
                     </h1>
                     <p className="mt-4 max-w-[56ch] text-sm leading-relaxed text-base-content/60">
-                        Chaque bête appartient à une personne. La boucle
-                        identifie l'animal de façon unique ; le reste du dossier
-                        le situe dans le territoire et garde la trace de son
-                        état sanitaire.
+                        Chaque bête appartient à un utilisateur. La boucle est
+                        générée automatiquement à partir du code postal du
+                        district et du numéro de l'animal ; choisissez sa
+                        localisation et complétez son dossier sanitaire.
                     </p>
                 </motion.div>
 
@@ -138,21 +149,21 @@ export default function Create({
                                 </span>
                             </legend>
 
-                            {personnes.length === 0 ? (
+                            {utilisateurs.length === 0 ? (
                                 <div
                                     role="alert"
                                     className="mt-7 rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4 text-sm leading-relaxed text-base-content/70"
                                 >
                                     <p>
-                                        Aucune personne n'est encore inscrite.
-                                        Créez d'abord sa fiche, puis revenez
+                                        Aucun utilisateur n'est encore inscrit.
+                                        Créez d'abord son compte, puis revenez
                                         assigner ses bovins.
                                     </p>
                                     <Link
-                                        href={route('personnes.create')}
+                                        href={route('utilisateurs.create')}
                                         className="btn btn-primary mt-4 h-10 rounded-full px-5 text-xs font-semibold normal-case"
                                     >
-                                        Créer une personne
+                                        Créer un utilisateur
                                     </Link>
                                 </div>
                             ) : (
@@ -160,13 +171,13 @@ export default function Create({
                                     <div className="flex items-center justify-between gap-4">
                                         <InputLabel
                                             htmlFor="proprietaire_id"
-                                            value="Personne propriétaire"
+                                            value="Utilisateur propriétaire"
                                         />
                                         <Link
-                                            href={route('personnes.create')}
+                                            href={route('utilisateurs.create')}
                                             className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
                                         >
-                                            Créer une personne
+                                            Créer un utilisateur
                                         </Link>
                                     </div>
 
@@ -184,22 +195,22 @@ export default function Create({
                                         required
                                     >
                                         <option value="" disabled>
-                                            Choisir une personne
+                                            Choisir un utilisateur
                                         </option>
-                                        {personnes.map((item) => (
+                                        {utilisateurs.map((item) => (
                                             <option
                                                 key={item.id}
                                                 value={item.id}
                                             >
-                                                {item.nom}
-                                                {item.telephone
-                                                    ? ` — ${item.telephone}`
+                                                {item.name}
+                                                {item.cin
+                                                    ? ` — CIN ${item.cin}`
                                                     : ''}
                                             </option>
                                         ))}
                                     </select>
                                     <p className="mt-1.5 text-xs text-base-content/45">
-                                        Une personne peut posséder plusieurs
+                                        Un utilisateur peut posséder plusieurs
                                         bovins.
                                     </p>
                                     <InputError
@@ -220,35 +231,6 @@ export default function Create({
                             </legend>
 
                             <div className="mt-7 grid gap-6 sm:grid-cols-2">
-                                <div className="sm:col-span-2">
-                                    <InputLabel
-                                        htmlFor="numero_boucle"
-                                        value="Numéro de boucle"
-                                    />
-                                    <TextInput
-                                        id="numero_boucle"
-                                        value={data.numero_boucle}
-                                        className="mt-2 font-medium uppercase tracking-wide"
-                                        placeholder="BK-0248"
-                                        maxLength={50}
-                                        isFocused
-                                        onChange={(event) =>
-                                            setData(
-                                                'numero_boucle',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    />
-                                    <p className="mt-1.5 text-xs text-base-content/45">
-                                        Un numéro unique, tel qu'inscrit sur la
-                                        boucle de l'animal.
-                                    </p>
-                                    <InputError
-                                        message={errors.numero_boucle}
-                                    />
-                                </div>
-
                                 <div className="sm:col-span-2">
                                     <span className="block text-[13px] font-semibold text-base-content/70">
                                         Sexe
@@ -301,6 +283,7 @@ export default function Create({
                                         value={data.date_naissance}
                                         max={todayInputValue()}
                                         className="mt-2"
+                                        isFocused
                                         onChange={(event) =>
                                             setData(
                                                 'date_naissance',
@@ -347,17 +330,85 @@ export default function Create({
                                 </span>
                             </legend>
 
-                            {districts.length === 0 ? (
+                            {provinces.length === 0 ? (
                                 <div
                                     role="alert"
                                     className="mt-7 rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4 text-sm leading-relaxed text-base-content/70"
                                 >
-                                    Aucun quartier n'est disponible. Lancez{' '}
-                                    <code>php artisan db:seed</code> pour
-                                    charger le découpage de démonstration.
+                                    Aucune localisation n'est disponible.
+                                    Lancez <code>php artisan db:seed</code>{' '}
+                                    pour charger le découpage administratif.
                                 </div>
                             ) : (
                                 <div className="mt-7 grid gap-6 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel
+                                            htmlFor="province"
+                                            value="Province"
+                                        />
+                                        <select
+                                            id="province"
+                                            value={provinceId}
+                                            className={`${selectClass} mt-2`}
+                                            onChange={(event) => {
+                                                setProvinceId(
+                                                    event.target.value,
+                                                );
+                                                setRegionId('');
+                                                setDistrictId('');
+                                                setData('commune_id', '');
+                                            }}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                Choisir une province
+                                            </option>
+                                            {provinces.map((item) => (
+                                                <option
+                                                    key={item.id}
+                                                    value={item.id}
+                                                >
+                                                    {item.nom}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <InputLabel
+                                            htmlFor="region"
+                                            value="Région"
+                                        />
+                                        <select
+                                            id="region"
+                                            value={regionId}
+                                            className={`${selectClass} mt-2`}
+                                            disabled={!province}
+                                            onChange={(event) => {
+                                                setRegionId(
+                                                    event.target.value,
+                                                );
+                                                setDistrictId('');
+                                                setData('commune_id', '');
+                                            }}
+                                            required
+                                        >
+                                            <option value="" disabled>
+                                                {province
+                                                    ? 'Choisir une région'
+                                                    : "D'abord la province"}
+                                            </option>
+                                            {regions.map((item) => (
+                                                <option
+                                                    key={item.id}
+                                                    value={item.id}
+                                                >
+                                                    {item.nom}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
                                     <div>
                                         <InputLabel
                                             htmlFor="district"
@@ -367,17 +418,19 @@ export default function Create({
                                             id="district"
                                             value={districtId}
                                             className={`${selectClass} mt-2`}
+                                            disabled={!region}
                                             onChange={(event) => {
                                                 setDistrictId(
                                                     event.target.value,
                                                 );
-                                                setCommuneId('');
-                                                setData('quartier_id', '');
+                                                setData('commune_id', '');
                                             }}
                                             required
                                         >
                                             <option value="" disabled>
-                                                Choisir un district
+                                                {region
+                                                    ? 'Choisir un district'
+                                                    : "D'abord la région"}
                                             </option>
                                             {districts.map((item) => (
                                                 <option
@@ -385,6 +438,9 @@ export default function Create({
                                                     value={item.id}
                                                 >
                                                     {item.name}
+                                                    {item.code_postal
+                                                        ? ` — ${item.code_postal}`
+                                                        : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -392,20 +448,21 @@ export default function Create({
 
                                     <div>
                                         <InputLabel
-                                            htmlFor="commune"
+                                            htmlFor="commune_id"
                                             value="Commune"
                                         />
                                         <select
-                                            id="commune"
-                                            value={communeId}
+                                            id="commune_id"
+                                            name="commune_id"
+                                            value={data.commune_id}
                                             className={`${selectClass} mt-2`}
                                             disabled={!district}
-                                            onChange={(event) => {
-                                                setCommuneId(
+                                            onChange={(event) =>
+                                                setData(
+                                                    'commune_id',
                                                     event.target.value,
-                                                );
-                                                setData('quartier_id', '');
-                                            }}
+                                                )
+                                            }
                                             required
                                         >
                                             <option value="" disabled>
@@ -422,45 +479,17 @@ export default function Create({
                                                 </option>
                                             ))}
                                         </select>
+                                        <InputError
+                                            message={errors.commune_id}
+                                        />
                                     </div>
 
-                                    <div className="sm:col-span-2">
-                                        <InputLabel
-                                            htmlFor="quartier_id"
-                                            value="Quartier"
-                                        />
-                                        <select
-                                            id="quartier_id"
-                                            name="quartier_id"
-                                            value={data.quartier_id}
-                                            className={`${selectClass} mt-2`}
-                                            disabled={!commune}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'quartier_id',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="" disabled>
-                                                {commune
-                                                    ? 'Choisir un quartier'
-                                                    : "D'abord la commune"}
-                                            </option>
-                                            {quartiers.map((item) => (
-                                                <option
-                                                    key={item.id}
-                                                    value={item.id}
-                                                >
-                                                    {item.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <InputError
-                                            message={errors.quartier_id}
-                                        />
-                                    </div>
+                                    <p className="text-xs leading-relaxed text-base-content/45 sm:col-span-2">
+                                        La boucle d'oreille sera générée à
+                                        l'enregistrement : code postal du
+                                        district + numéro individuel du bovin
+                                        (ex. 101-1).
+                                    </p>
                                 </div>
                             )}
                         </fieldset>
@@ -533,7 +562,7 @@ export default function Create({
 
                         <div className="flex flex-wrap items-center gap-3 border-t border-base-content/15 pt-7">
                             <PrimaryButton
-                                disabled={processing || personnes.length === 0}
+                                disabled={processing || utilisateurs.length === 0}
                             >
                                 {processing
                                     ? 'Enregistrement…'
@@ -565,30 +594,31 @@ export default function Create({
                             className="mx-auto w-full max-w-[19rem]"
                         >
                             <EarTag
-                                number={data.numero_boucle || 'BK—'}
+                                number={numeroPreview}
                                 label="BOKINOMBY · NOUVELLE FICHE"
                                 title={
                                     proprietaire
-                                        ? proprietaire.nom
+                                        ? proprietaire.name
                                         : 'Propriétaire à préciser'
                                 }
                                 rows={[
                                     ['Sexe', sexeLabel],
                                     ['Naissance', formatDate(data.date_naissance)],
-                                    ['Quartier', quartier?.name ?? '—'],
+                                    ['Commune', commune?.name ?? '—'],
                                     ['District', district?.name ?? '—'],
                                 ]}
-                                footer="APERÇU · NON ENREGISTRÉ"
+                                footer="BOUCLE GÉNÉRÉE À L'ENREGISTREMENT"
                             />
                         </motion.div>
 
                         <div className="mx-auto mt-6 max-w-[20rem] border-t border-base-content/15 pt-5 text-xs leading-relaxed text-base-content/45">
                             <p>
-                                La boucle fait foi. Vérifiez-la sur l'animal
-                                avant de valider la fiche.
+                                La boucle est attribuée automatiquement par
+                                l'application, à partir du code postal du
+                                district choisi.
                             </p>
                             <p className="mt-3">
-                                Une personne peut recevoir plusieurs bovins :
+                                Un utilisateur peut recevoir plusieurs bovins :
                                 revenez sur sa fiche pour compléter son cheptel.
                             </p>
                             <p className="mt-3">

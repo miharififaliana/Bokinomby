@@ -15,7 +15,7 @@ class Bovin extends Model
         'date_naissance',
         'date_deces',
         'dossier_sante',
-        'quartier_id',
+        'commune_id',
     ];
 
     protected function casts(): array
@@ -30,11 +30,11 @@ class Bovin extends Model
 
     public function proprietaire(): BelongsTo
     {
-        return $this->belongsTo(Personne::class, 'proprietaire_id');
+        return $this->belongsTo(User::class, 'proprietaire_id');
     }
 
-    public function quartier(): BelongsTo
+    public function commune(): BelongsTo
     {
-        return $this->belongsTo(Quartier::class);
+        return $this->belongsTo(Commune::class);
     }
 }

@@ -1,7 +1,10 @@
-import EarTag from '@/Components/EarTag';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
+const currentYear = new Date().getFullYear();
 
 function initials(name = '') {
     return name
@@ -13,50 +16,197 @@ function initials(name = '') {
         .toUpperCase();
 }
 
+function BarChart({ labels, values }) {
+    const max = Math.max(...values, 1);
+
+    return (
+        <div className="mt-6 overflow-x-auto">
+            <div className="flex items-end gap-2" style={{ minHeight: '12rem' }}>
+                {labels.map((label, index) => {
+                    const value = values[index] ?? 0;
+                    const height = Math.round((value / max) * 100);
+
+                    return (
+                        <div
+                            key={`${label}-${index}`}
+                            className="flex min-w-[2.75rem] flex-col items-center justify-end"
+                        >
+                            <span className="mb-1 text-xs font-medium">
+                                {value}
+                            </span>
+                            <div
+                                className="w-7 rounded-t-md bg-primary transition-all"
+                                style={{
+                                    height: `${Math.max(height, value ? 6 : 2)}%`,
+                                    minHeight: value ? '0.375rem' : '0.125rem',
+                                }}
+                            />
+                            <span
+                                className="mt-2 w-16 truncate text-center text-[10px] text-base-content/55"
+                                title={label}
+                            >
+                                {label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function VitalChart({ years, born, deaths, metric }) {
+    const showBorn = metric !== 'deaths';
+    const showDeaths = metric !== 'born';
+    const relevant = years.map((_, index) => {
+        let max = 0;
+        if (showBorn) max = Math.max(max, born[index] ?? 0);
+        if (showDeaths) max = Math.max(max, deaths[index] ?? 0);
+        return max;
+    });
+    const max = Math.max(...relevant, 1);
+
+    return (
+        <div className="mt-6 overflow-x-auto">
+            <div className="flex items-end gap-3" style={{ minHeight: '12rem' }}>
+                {years.map((year, index) => {
+                    const bornValue = born[index] ?? 0;
+                    const deathValue = deaths[index] ?? 0;
+                    const bornHeight = Math.round((bornValue / max) * 100);
+                    const deathHeight = Math.round((deathValue / max) * 100);
+
+                    return (
+                        <div
+                            key={year}
+                            className="flex min-w-[3.5rem] flex-col items-center justify-end"
+                        >
+                            <div className="mb-1 flex gap-1 text-[10px] font-medium">
+                                {showBorn && (
+                                    <span className="text-success">
+                                        {bornValue}
+                                    </span>
+                                )}
+                                {showDeaths && (
+                                    <span className="text-error">
+                                        {deathValue}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-end gap-1">
+                                {showBorn && (
+                                    <div
+                                        className="w-4 rounded-t-md bg-success transition-all"
+                                        style={{
+                                            height: `${Math.max(
+                                                bornHeight,
+                                                bornValue ? 6 : 2,
+                                            )}%`,
+                                            minHeight: bornValue
+                                                ? '0.375rem'
+                                                : '0.125rem',
+                                        }}
+                                    />
+                                )}
+                                {showDeaths && (
+                                    <div
+                                        className="w-4 rounded-t-md bg-error transition-all"
+                                        style={{
+                                            height: `${Math.max(
+                                                deathHeight,
+                                                deathValue ? 6 : 2,
+                                            )}%`,
+                                            minHeight: deathValue
+                                                ? '0.375rem'
+                                                : '0.125rem',
+                                        }}
+                                    />
+                                )}
+                            </div>
+                            <span className="mt-2 text-[10px] text-base-content/55">
+                                {year}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-4 text-xs text-base-content/60">
+                {showBorn && (
+                    <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-success" />
+                        Nés
+                    </span>
+                )}
+                {showDeaths && (
+                    <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-error" />
+                        Morts
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const user = usePage().props.auth.user;
     const reduceMotion = useReducedMotion();
-
     const firstName = user.name.split(' ')[0];
-    const roleLabel = user.role === 'admin' ? 'Administrateur' : 'Employé';
 
-    const today = new Intl.DateTimeFormat('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-    }).format(new Date());
+    const [geoLevel, setGeoLevel] = useState('province');
+    const [geo, setGeo] = useState({ labels: [], counts: [] });
+    const [geoLoading, setGeoLoading] = useState(false);
 
-    const memberSince = user.created_at
-        ? new Intl.DateTimeFormat('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-          }).format(new Date(user.created_at))
-        : '—';
+    const [metric, setMetric] = useState('both');
+    const [startYear, setStartYear] = useState(currentYear - 4);
+    const [endYear, setEndYear] = useState(currentYear);
+    const [vital, setVital] = useState({
+        years: [],
+        born: [],
+        deaths: [],
+        metric: 'both',
+    });
+    const [vitalLoading, setVitalLoading] = useState(false);
+    const [vitalError, setVitalError] = useState('');
 
-    const rows = [
-        {
-            term: 'Profil',
-            value: `${user.name} · ${user.email}`,
-            action: { label: 'Modifier', href: route('profile.edit') },
-        },
-        {
-            term: 'Sécurité',
-            value: 'Mot de passe et accès au compte.',
-            action: {
-                label: 'Changer',
-                href: `${route('profile.edit')}#password`,
-            },
-        },
-        {
-            term: 'Rôle',
-            value: roleLabel,
-        },
-        {
-            term: 'Membre depuis',
-            value: memberSince,
-        },
-    ];
+    useEffect(() => {
+        let active = true;
+        setGeoLoading(true);
+        axios
+            .get(route('dashboard.geo'), { params: { level: geoLevel } })
+            .then((response) => {
+                if (active) setGeo(response.data);
+            })
+            .finally(() => {
+                if (active) setGeoLoading(false);
+            });
+        return () => {
+            active = false;
+        };
+    }, [geoLevel]);
+
+    const loadVital = () => {
+        if (startYear > endYear) {
+            setVitalError('L’année de début doit précéder l’année de fin.');
+            return;
+        }
+        setVitalError('');
+        setVitalLoading(true);
+        axios
+            .get(route('dashboard.vital'), {
+                params: {
+                    metric,
+                    start_year: startYear,
+                    end_year: endYear,
+                },
+            })
+            .then((response) => setVital(response.data))
+            .finally(() => setVitalLoading(false));
+    };
+
+    useEffect(() => {
+        loadVital();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <AuthenticatedLayout>
@@ -68,109 +218,145 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
-                    <p className="text-sm capitalize text-base-content/45">
-                        {today}
+                    <p className="text-sm text-base-content/45">
+                        Tableau de bord
                     </p>
-
                     <h1 className="mt-3 font-display text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] tracking-[-0.02em]">
                         Bonjour, {firstName}.
                     </h1>
-
                     <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-base-content/60">
-                        Votre accès au registre est actif. Retrouvez ici les
-                        informations de votre compte et les réglages de votre
-                        dossier.
+                        Visualisez la répartition du cheptel par découpage
+                        administratif et son évolution dans le temps.
                     </p>
                 </motion.div>
 
-                <div className="mt-12 grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-                    <section aria-labelledby="espace-heading">
-                        <h2
-                            id="espace-heading"
-                            className="text-sm font-semibold text-base-content/45"
+                <section className="mt-12 rounded-[2rem] border border-base-content/15 bg-base-100 p-6 sm:p-8">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <h2 className="text-sm font-semibold text-base-content/45">
+                                Répartition du cheptel
+                            </h2>
+                            <p className="mt-1 text-xs text-base-content/55">
+                                Nombre de bovins par niveau géographique.
+                            </p>
+                        </div>
+                        <select
+                            value={geoLevel}
+                            onChange={(event) =>
+                                setGeoLevel(event.target.value)
+                            }
+                            className="select select-bordered h-11 rounded-xl border-base-content/20 bg-base-100 text-sm"
                         >
-                            Votre espace
-                        </h2>
+                            <option value="province">Province</option>
+                            <option value="region">Région</option>
+                            <option value="district">District</option>
+                        </select>
+                    </div>
 
-                        <dl className="mt-3">
-                            {rows.map((row) => (
-                                <div
-                                    key={row.term}
-                                    className="flex flex-wrap items-center justify-between gap-4 border-t border-base-content/15 py-5"
+                    {geoLoading ? (
+                        <p className="mt-8 text-sm text-base-content/55">
+                            Chargement…
+                        </p>
+                    ) : geo.labels.length === 0 ? (
+                        <p className="mt-8 text-sm text-base-content/55">
+                            Aucune donnée.
+                        </p>
+                    ) : (
+                        <BarChart labels={geo.labels} values={geo.counts} />
+                    )}
+                </section>
+
+                <section className="mt-8 rounded-[2rem] border border-base-content/15 bg-base-100 p-6 sm:p-8">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <h2 className="text-sm font-semibold text-base-content/45">
+                                Évolution du cheptel
+                            </h2>
+                            <p className="mt-1 text-xs text-base-content/55">
+                                Bovins nés et/ou morts par année.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-end gap-3">
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
+                                    Afficher
+                                </label>
+                                <select
+                                    value={metric}
+                                    onChange={(event) =>
+                                        setMetric(event.target.value)
+                                    }
+                                    className="select select-bordered mt-2 h-11 rounded-xl border-base-content/20 bg-base-100 text-sm"
                                 >
-                                    <div className="min-w-0">
-                                        <dt className="text-[13px] font-semibold">
-                                            {row.term}
-                                        </dt>
-                                        <dd className="mt-1 truncate text-sm text-base-content/55">
-                                            {row.value}
-                                        </dd>
-                                    </div>
-
-                                    {row.action && (
-                                        <Link
-                                            href={row.action.href}
-                                            className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
-                                        >
-                                            {row.action.label}
-                                        </Link>
-                                    )}
-                                </div>
-                            ))}
-                        </dl>
-
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            <Link
-                                href={route('profile.edit')}
+                                    <option value="born">Nés</option>
+                                    <option value="deaths">Morts</option>
+                                    <option value="both">Les deux</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
+                                    De
+                                </label>
+                                <input
+                                    type="number"
+                                    value={startYear}
+                                    onChange={(event) =>
+                                        setStartYear(
+                                            Number(event.target.value),
+                                        )
+                                    }
+                                    className="input input-bordered mt-2 h-11 w-24 rounded-xl border-base-content/20 bg-base-100 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
+                                    À
+                                </label>
+                                <input
+                                    type="number"
+                                    value={endYear}
+                                    onChange={(event) =>
+                                        setEndYear(Number(event.target.value))
+                                    }
+                                    className="input input-bordered mt-2 h-11 w-24 rounded-xl border-base-content/20 bg-base-100 text-sm"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={loadVital}
+                                disabled={vitalLoading}
                                 className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                             >
-                                Modifier mon profil
-                            </Link>
-                            <Link
-                                href="/"
-                                className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
-                            >
-                                Voir le site
-                            </Link>
+                                {vitalLoading
+                                    ? 'Chargement…'
+                                    : 'Mettre à jour'}
+                            </button>
                         </div>
+                    </div>
 
-                        <p className="mt-10 max-w-[46ch] border-t border-base-content/15 pt-6 font-display text-xl leading-snug text-base-content/50">
-                            Le registre se tient à jour, une bête à la fois.
+                    {vitalError && (
+                        <p className="mt-4 text-sm text-error">
+                            {vitalError}
                         </p>
-                    </section>
+                    )}
 
-                    <aside className="mx-auto w-full max-w-[20rem] lg:mx-0 lg:ms-auto">
-                        <motion.div
-                            initial={
-                                reduceMotion
-                                    ? false
-                                    : { opacity: 0, y: -28, rotate: -5 }
-                            }
-                            animate={{ opacity: 1, y: 0, rotate: 2 }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 70,
-                                damping: 15,
-                                delay: 0.12,
-                            }}
-                        >
-                            <EarTag
-                                number={initials(user.name)}
-                                label="BOKINOMBY · MEMBRE"
-                                title={user.name}
-                                rows={[
-                                    ['Rôle', roleLabel],
-                                    ['Membre depuis', memberSince],
-                                ]}
-                                footer="CARTE DE MEMBRE DU REGISTRE"
-                            />
-                        </motion.div>
-
-                        <p className="mt-6 text-center text-xs text-base-content/45">
-                            {user.email}
+                    {vitalLoading ? (
+                        <p className="mt-8 text-sm text-base-content/55">
+                            Chargement…
                         </p>
-                    </aside>
-                </div>
+                    ) : vital.years.length === 0 ? (
+                        <p className="mt-8 text-sm text-base-content/55">
+                            Aucune donnée.
+                        </p>
+                    ) : (
+                        <VitalChart
+                            years={vital.years}
+                            born={vital.born}
+                            deaths={vital.deaths}
+                            metric={metric}
+                        />
+                    )}
+                </section>
             </div>
         </AuthenticatedLayout>
     );

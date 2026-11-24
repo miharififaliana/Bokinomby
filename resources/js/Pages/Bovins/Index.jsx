@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 function formatDate(value) {
@@ -16,9 +16,20 @@ function sexLabel(sexe) {
     return sexe === 'male' ? 'Mâle' : 'Femelle';
 }
 
-export default function Index({ bovins, stats, success }) {
+export default function Index({ bovins, stats, filters, success }) {
     const reduceMotion = useReducedMotion();
     const hasBovins = bovins.data.length > 0;
+    const search = filters?.search ?? '';
+    const { data, setData, get, processing } = useForm({ search });
+
+    const submit = (event) => {
+        event.preventDefault();
+
+        get(route('bovins.index'), {
+            preserveState: true,
+            replace: true,
+        });
+    };
 
     return (
         <AuthenticatedLayout>
@@ -48,10 +59,10 @@ export default function Index({ bovins, stats, success }) {
 
                         <div className="flex flex-wrap items-center gap-2">
                             <Link
-                                href={route('personnes.index')}
+                                href={route('utilisateurs.index')}
                                 className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                             >
-                                Les personnes
+                                Les éleveurs
                             </Link>
                             <Link
                                 href={route('bovins.create')}
@@ -74,9 +85,48 @@ export default function Index({ bovins, stats, success }) {
                     </motion.p>
                 )}
 
+                <form
+                    onSubmit={submit}
+                    className="mt-8 flex flex-wrap items-end gap-3 border-y border-base-content/15 py-5"
+                >
+                    <div className="min-w-0 flex-1">
+                        <label
+                            htmlFor="search"
+                            className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45"
+                        >
+                            Rechercher un bovin par boucle d'oreille
+                        </label>
+                        <input
+                            id="search"
+                            type="search"
+                            value={data.search}
+                            placeholder="101-1"
+                            className="input input-bordered mt-2 h-11 w-full rounded-xl border-base-content/20 bg-base-100 text-sm font-medium tracking-wide focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            onChange={(event) =>
+                                setData('search', event.target.value)
+                            }
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
+                    >
+                        {processing ? 'Recherche…' : 'Rechercher'}
+                    </button>
+                    {search && (
+                        <Link
+                            href={route('bovins.index')}
+                            className="btn btn-ghost h-11 rounded-full px-5 text-sm font-semibold normal-case text-base-content/55 hover:bg-base-200 hover:text-base-content"
+                        >
+                            Réinitialiser
+                        </Link>
+                    )}
+                </form>
+
                 <dl className="mt-10 grid grid-cols-3 border-y border-base-content/15">
                     {[
-                        ['Boucles', stats.total],
+                        ['Bovins', stats.total],
                         ['Femelles', stats.femelles],
                         ['Mâles', stats.males],
                     ].map(([label, value], index) => (
@@ -103,16 +153,17 @@ export default function Index({ bovins, stats, success }) {
                         <div className="mt-4 flex items-center justify-between gap-4 py-3 text-xs text-base-content/45">
                             <p>
                                 {bovins.from}–{bovins.to} sur {bovins.total}{' '}
-                                {bovins.total > 1 ? 'boucles' : 'boucle'}
+                                {bovins.total > 1 ? 'bovins' : 'bovin'}
                             </p>
-                            <p>Assignés à leurs personnes</p>
+                            <p>Assignés à leurs propriétaires</p>
                         </div>
 
                         <div className="border-t border-base-content/15">
                             {bovins.data.map((bovin) => (
-                                <article
+                                <Link
                                     key={bovin.id}
-                                    className="grid gap-4 border-b border-base-content/15 py-6 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] sm:items-center sm:gap-6"
+                                    href={route('bovins.show', bovin.id)}
+                                    className="grid gap-4 border-b border-base-content/15 py-6 transition-colors hover:bg-base-200/40 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] sm:items-center sm:gap-6"
                                 >
                                     <div className="flex items-center gap-4">
                                         <span
@@ -124,7 +175,7 @@ export default function Index({ bovins, stats, success }) {
 
                                         <div className="min-w-0">
                                             <p className="truncate font-display text-xl tracking-tight">
-                                                {bovin.numero_boucle}
+                                                {bovin.proprietaire.name}
                                             </p>
                                             <p className="mt-0.5 text-xs text-base-content/55">
                                                 {sexLabel(bovin.sexe)} · naissance{' '}
@@ -135,38 +186,41 @@ export default function Index({ bovins, stats, success }) {
 
                                     <div className="min-w-0 ps-16 sm:ps-0">
                                         <p className="truncate text-sm font-medium">
-                                            {bovin.quartier.name}
+                                            {bovin.commune?.name ?? '—'}
                                         </p>
                                         <p className="mt-0.5 truncate text-xs text-base-content/55">
-                                            {bovin.quartier.commune.name} ·{' '}
-                                            {bovin.quartier.commune.district.name}
+                                            {bovin.commune?.district?.name ?? '—'}{' '}
+                                            ·{' '}
+                                            {bovin.commune?.district?.region?.nom ??
+                                                '—'}
                                         </p>
-                                        <Link
-                                            href={route(
-                                                'personnes.show',
-                                                bovin.proprietaire.id,
-                                            )}
-                                            className="mt-1 inline-block max-w-full truncate text-xs text-base-content/45 underline-offset-4 hover:text-primary hover:underline"
-                                        >
-                                            Propriétaire :{' '}
-                                            {bovin.proprietaire.nom}
-                                        </Link>
+                                        <p className="mt-1 text-xs text-base-content/45">
+                                            Voir la fiche détaillée →
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center gap-2 ps-16 sm:justify-end sm:ps-0">
                                         <span
-                                            className={`badge border-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                                            className={`inline-flex items-center gap-2 text-xs font-semibold ${
                                                 bovin.date_deces
-                                                    ? 'bg-base-content/10 text-base-content/55'
-                                                    : 'bg-success/10 text-success'
+                                                    ? 'text-base-content/45'
+                                                    : 'text-success'
                                             }`}
                                         >
+                                            <span
+                                                aria-hidden="true"
+                                                className={`h-2 w-2 rounded-full ${
+                                                    bovin.date_deces
+                                                        ? 'bg-base-content/30'
+                                                        : 'bg-success'
+                                                }`}
+                                            />
                                             {bovin.date_deces
-                                                ? 'Décédé'
-                                                : 'Actif'}
+                                                ? 'Mort'
+                                                : 'Vivant'}
                                         </span>
                                     </div>
-                                </article>
+                                </Link>
                             ))}
                         </div>
 
@@ -209,26 +263,39 @@ export default function Index({ bovins, stats, success }) {
                 ) : (
                     <div className="mt-10 rounded-[2rem] border border-dashed border-base-content/20 px-6 py-14 text-center sm:px-12">
                         <p className="font-display text-3xl tracking-tight">
-                            Aucune boucle au registre.
+                            {search
+                                ? 'Aucun bovin pour cette boucle.'
+                                : 'Aucun bovin au registre.'}
                         </p>
                         <p className="mx-auto mt-3 max-w-[42ch] text-sm leading-relaxed text-base-content/55">
-                            Inscrivez d'abord une personne, puis assignez-lui
-                            une ou plusieurs bêtes. Le registre commence par
-                            un propriétaire.
+                            {search
+                                ? 'Vérifiez le numéro saisi ou réinitialisez la recherche.'
+                                : "Inscrivez d'abord un utilisateur, puis assignez-lui une ou plusieurs bêtes. Le registre commence par un propriétaire."}
                         </p>
                         <div className="mt-7 flex flex-wrap justify-center gap-2">
-                            <Link
-                                href={route('personnes.create')}
-                                className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
-                            >
-                                Ajouter une personne
-                            </Link>
-                            <Link
-                                href={route('bovins.create')}
-                                className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
-                            >
-                                Enregistrer un bovin
-                            </Link>
+                            {search ? (
+                                <Link
+                                    href={route('bovins.index')}
+                                    className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
+                                >
+                                    Réinitialiser la recherche
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        href={route('utilisateurs.create')}
+                                        className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
+                                    >
+                                        Ajouter un utilisateur
+                                    </Link>
+                                    <Link
+                                        href={route('bovins.create')}
+                                        className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
+                                    >
+                                        Enregistrer un bovin
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

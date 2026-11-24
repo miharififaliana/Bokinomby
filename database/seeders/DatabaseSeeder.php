@@ -21,6 +21,6 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $this->call(LocationSeeder::class);
+        $this->call(MadagascarGeographySeeder::class);
     }
 }
