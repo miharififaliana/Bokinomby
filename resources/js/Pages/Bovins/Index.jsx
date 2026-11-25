@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -12,15 +13,15 @@ function formatDate(value) {
     return `${day}/${month}/${year}`;
 }
 
-function sexLabel(sexe) {
-    return sexe === 'male' ? 'Mâle' : 'Femelle';
-}
-
 export default function Index({ bovins, stats, filters, success }) {
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const hasBovins = bovins.data.length > 0;
     const search = filters?.search ?? '';
     const { data, setData, get, processing } = useForm({ search });
+
+    const sexLabel = (sexe) =>
+        sexe === 'male' ? t('bovins.index.male') : t('bovins.index.female');
 
     const submit = (event) => {
         event.preventDefault();
@@ -33,7 +34,7 @@ export default function Index({ bovins, stats, filters, success }) {
 
     return (
         <AuthenticatedLayout>
-            <Head title="Registre bovin" />
+            <Head title={t('bovins.index.title')} />
 
             <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -42,33 +43,31 @@ export default function Index({ bovins, stats, filters, success }) {
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <p className="text-sm text-base-content/45">
-                        Registre bovin
+                        {t('bovins.index.eyebrow')}
                     </p>
 
                     <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
                         <div>
                             <h1 className="font-display text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] tracking-[-0.02em]">
-                                Le cheptel enregistré.
+                                {t('bovins.index.heading')}
                             </h1>
                             <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-base-content/60">
-                                Chaque boucle ouvre un dossier unique : identité,
-                                origine, localisation et suivi sanitaire de la
-                                bête.
+                                {t('bovins.index.description')}
                             </p>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                             <Link
-                                href={route('utilisateurs.index')}
+                                href={route('eleveurs.index')}
                                 className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                             >
-                                Les éleveurs
+                                {t('bovins.index.breeders')}
                             </Link>
                             <Link
                                 href={route('bovins.create')}
                                 className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                             >
-                                Enregistrer un bovin
+                                {t('bovins.index.create')}
                             </Link>
                         </div>
                     </div>
@@ -94,13 +93,13 @@ export default function Index({ bovins, stats, filters, success }) {
                             htmlFor="search"
                             className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45"
                         >
-                            Rechercher un bovin par boucle d'oreille
+                            {t('bovins.index.searchLabel')}
                         </label>
                         <input
                             id="search"
                             type="search"
                             value={data.search}
-                            placeholder="101-1"
+                            placeholder={t('bovins.index.searchPlaceholder')}
                             className="input input-bordered mt-2 h-11 w-full rounded-xl border-base-content/20 bg-base-100 text-sm font-medium tracking-wide focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                             onChange={(event) =>
                                 setData('search', event.target.value)
@@ -112,23 +111,25 @@ export default function Index({ bovins, stats, filters, success }) {
                         disabled={processing}
                         className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                     >
-                        {processing ? 'Recherche…' : 'Rechercher'}
+                        {processing
+                            ? t('bovins.index.searching')
+                            : t('bovins.index.search')}
                     </button>
                     {search && (
                         <Link
                             href={route('bovins.index')}
                             className="btn btn-ghost h-11 rounded-full px-5 text-sm font-semibold normal-case text-base-content/55 hover:bg-base-200 hover:text-base-content"
                         >
-                            Réinitialiser
+                            {t('bovins.index.reset')}
                         </Link>
                     )}
                 </form>
 
                 <dl className="mt-10 grid grid-cols-3 border-y border-base-content/15">
                     {[
-                        ['Bovins', stats.total],
-                        ['Femelles', stats.femelles],
-                        ['Mâles', stats.males],
+                        [t('bovins.index.statsTotal'), stats.total],
+                        [t('bovins.index.statsFemelles'), stats.femelles],
+                        [t('bovins.index.statsMales'), stats.males],
                     ].map(([label, value], index) => (
                         <div
                             key={label}
@@ -152,10 +153,17 @@ export default function Index({ bovins, stats, filters, success }) {
                     <>
                         <div className="mt-4 flex items-center justify-between gap-4 py-3 text-xs text-base-content/45">
                             <p>
-                                {bovins.from}–{bovins.to} sur {bovins.total}{' '}
-                                {bovins.total > 1 ? 'bovins' : 'bovin'}
+                                {t('bovins.index.count', {
+                                    from: bovins.from,
+                                    to: bovins.to,
+                                    total: bovins.total,
+                                    label:
+                                        bovins.total > 1
+                                            ? t('bovins.index.bovinPlural')
+                                            : t('bovins.index.bovinSingular'),
+                                })}
                             </p>
-                            <p>Assignés à leurs propriétaires</p>
+                            <p>{t('bovins.index.assigned')}</p>
                         </div>
 
                         <div className="border-t border-base-content/15">
@@ -174,12 +182,21 @@ export default function Index({ bovins, stats, filters, success }) {
                                         </span>
 
                                         <div className="min-w-0">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
+                                                {t('bovins.index.boucle')}
+                                            </p>
                                             <p className="truncate font-display text-xl tracking-tight">
+                                                {bovin.numero_boucle}
+                                            </p>
+                                            <p className="mt-0.5 truncate text-sm font-medium text-base-content/70">
                                                 {bovin.proprietaire.name}
                                             </p>
                                             <p className="mt-0.5 text-xs text-base-content/55">
-                                                {sexLabel(bovin.sexe)} · naissance{' '}
-                                                {formatDate(bovin.date_naissance)}
+                                                {sexLabel(bovin.sexe)} ·{' '}
+                                                {t('bovins.index.born')}{' '}
+                                                {formatDate(
+                                                    bovin.date_naissance,
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -189,13 +206,14 @@ export default function Index({ bovins, stats, filters, success }) {
                                             {bovin.commune?.name ?? '—'}
                                         </p>
                                         <p className="mt-0.5 truncate text-xs text-base-content/55">
-                                            {bovin.commune?.district?.name ?? '—'}{' '}
+                                            {bovin.commune?.district?.name ??
+                                                '—'}{' '}
                                             ·{' '}
-                                            {bovin.commune?.district?.region?.nom ??
-                                                '—'}
+                                            {bovin.commune?.district?.region
+                                                ?.nom ?? '—'}
                                         </p>
                                         <p className="mt-1 text-xs text-base-content/45">
-                                            Voir la fiche détaillée →
+                                            {t('bovins.index.viewRecord')}
                                         </p>
                                     </div>
 
@@ -216,8 +234,8 @@ export default function Index({ bovins, stats, filters, success }) {
                                                 }`}
                                             />
                                             {bovin.date_deces
-                                                ? 'Mort'
-                                                : 'Vivant'}
+                                                ? t('bovins.index.dead')
+                                                : t('bovins.index.alive')}
                                         </span>
                                     </div>
                                 </Link>
@@ -226,7 +244,7 @@ export default function Index({ bovins, stats, filters, success }) {
 
                         {bovins.last_page > 1 && (
                             <nav
-                                aria-label="Pagination des bovins"
+                                aria-label={t('bovins.index.title')}
                                 className="mt-8 flex items-center justify-between gap-4"
                             >
                                 {bovins.prev_page_url ? (
@@ -235,15 +253,17 @@ export default function Index({ bovins, stats, filters, success }) {
                                         preserveScroll
                                         className="btn btn-outline h-10 rounded-full border-base-content/20 px-5 text-xs font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                     >
-                                        Précédent
+                                        {t('bovins.index.previous')}
                                     </Link>
                                 ) : (
                                     <span />
                                 )}
 
                                 <p className="text-xs text-base-content/45">
-                                    Page {bovins.current_page} sur{' '}
-                                    {bovins.last_page}
+                                    {t('bovins.index.page', {
+                                        current: bovins.current_page,
+                                        last: bovins.last_page,
+                                    })}
                                 </p>
 
                                 {bovins.next_page_url ? (
@@ -252,7 +272,7 @@ export default function Index({ bovins, stats, filters, success }) {
                                         preserveScroll
                                         className="btn btn-outline h-10 rounded-full border-base-content/20 px-5 text-xs font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                     >
-                                        Suivant
+                                        {t('bovins.index.next')}
                                     </Link>
                                 ) : (
                                     <span />
@@ -264,13 +284,13 @@ export default function Index({ bovins, stats, filters, success }) {
                     <div className="mt-10 rounded-[2rem] border border-dashed border-base-content/20 px-6 py-14 text-center sm:px-12">
                         <p className="font-display text-3xl tracking-tight">
                             {search
-                                ? 'Aucun bovin pour cette boucle.'
-                                : 'Aucun bovin au registre.'}
+                                ? t('bovins.index.emptySearchTitle')
+                                : t('bovins.index.emptyTitle')}
                         </p>
                         <p className="mx-auto mt-3 max-w-[42ch] text-sm leading-relaxed text-base-content/55">
                             {search
-                                ? 'Vérifiez le numéro saisi ou réinitialisez la recherche.'
-                                : "Inscrivez d'abord un utilisateur, puis assignez-lui une ou plusieurs bêtes. Le registre commence par un propriétaire."}
+                                ? t('bovins.index.emptySearchText')
+                                : t('bovins.index.emptyText')}
                         </p>
                         <div className="mt-7 flex flex-wrap justify-center gap-2">
                             {search ? (
@@ -278,21 +298,21 @@ export default function Index({ bovins, stats, filters, success }) {
                                     href={route('bovins.index')}
                                     className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                 >
-                                    Réinitialiser la recherche
+                                    {t('bovins.index.resetSearch')}
                                 </Link>
                             ) : (
                                 <>
                                     <Link
-                                        href={route('utilisateurs.create')}
+                                        href={route('eleveurs.create')}
                                         className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                                     >
-                                        Ajouter un utilisateur
+                                        {t('bovins.index.addUser')}
                                     </Link>
                                     <Link
                                         href={route('bovins.create')}
                                         className="btn btn-outline h-11 rounded-full border-base-content/20 px-6 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                     >
-                                        Enregistrer un bovin
+                                        {t('bovins.index.create')}
                                     </Link>
                                 </>
                             )}

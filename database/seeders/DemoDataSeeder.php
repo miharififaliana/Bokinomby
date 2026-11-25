@@ -48,7 +48,7 @@ class DemoDataSeeder extends Seeder
                         'proprietaire_id' => $employers[($number - 1) % $employers->count()]->id,
                         'sexe' => fake()->randomElement(['male', 'femelle']),
                         'signe_particulier' => fake()->boolean(35)
-                            ? ['description' => fake()->sentence(4)]
+                            ? [fake()->sentence(4)]
                             : null,
                         'date_naissance' => fake()->dateTimeBetween('-15 years', '-1 year')->format('Y-m-d'),
                         'dossier_sante' => [],

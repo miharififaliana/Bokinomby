@@ -2,11 +2,13 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { useTranslation } from '@/lib/i18n';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 
 export default function UpdatePasswordForm({ className = '' }) {
+    const { t } = useTranslation();
     const passwordInput = useRef();
     const currentPasswordInput = useRef();
 
@@ -48,12 +50,11 @@ export default function UpdatePasswordForm({ className = '' }) {
         <section className={className}>
             <header>
                 <h2 className="font-display text-2xl tracking-tight">
-                    Mot de passe
+                    {t('profile.password.title')}
                 </h2>
 
                 <p className="mt-2 text-sm leading-relaxed text-base-content/55">
-                    Utilisez un mot de passe long et unique pour protéger votre
-                    accès au registre.
+                    {t('profile.password.description')}
                 </p>
             </header>
 
@@ -61,7 +62,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                 <div>
                     <InputLabel
                         htmlFor="current_password"
-                        value="Mot de passe actuel"
+                        value={t('profile.password.current')}
                     />
 
                     <TextInput
@@ -82,7 +83,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                 <div>
                     <InputLabel
                         htmlFor="password"
-                        value="Nouveau mot de passe"
+                        value={t('profile.password.new')}
                     />
 
                     <TextInput
@@ -101,7 +102,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                 <div>
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Confirmer le nouveau mot de passe"
+                        value={t('profile.password.confirm')}
                     />
 
                     <TextInput
@@ -120,7 +121,9 @@ export default function UpdatePasswordForm({ className = '' }) {
 
                 <div className="flex items-center gap-4 pt-1">
                     <PrimaryButton disabled={processing}>
-                        {processing ? 'Mise à jour…' : 'Mettre à jour'}
+                        {processing
+                            ? t('profile.password.submitting')
+                            : t('profile.password.submit')}
                     </PrimaryButton>
 
                     <Transition
@@ -131,7 +134,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-base-content/55">
-                            Enregistré.
+                            {t('profile.password.saved')}
                         </p>
                     </Transition>
                 </div>

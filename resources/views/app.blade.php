@@ -7,6 +7,29 @@
         <meta name="description" content="Bokinomby, le registre bovin numérique de Kinshasa : identité, localisation et suivi sanitaire des bêtes.">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
+        <script>
+            (function () {
+                try {
+                    var stored = localStorage.getItem('bokinomby.theme');
+                    var dark = stored
+                        ? stored === 'dark'
+                        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        dark ? 'bokinomby-dark' : 'bokinomby'
+                    );
+
+                    var locale = localStorage.getItem('bokinomby.locale');
+                    if (locale === 'mg') {
+                        document.documentElement.setAttribute('lang', 'mg');
+                    }
+                } catch (error) {
+                    // Préférences indisponibles : thème et langue par défaut.
+                }
+            })();
+        </script>
+
         <title inertia>{{ config('app.name', 'Bokinomby') }}</title>
 
         <!-- Fonts -->

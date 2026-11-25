@@ -3,11 +3,13 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 export default function Create() {
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         cin: '',
@@ -17,12 +19,12 @@ export default function Create() {
     const submit = (event) => {
         event.preventDefault();
 
-        post(route('utilisateurs.store'));
+        post(route('eleveurs.store'));
     };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Ajouter un utilisateur" />
+            <Head title={t('eleveurs.create.title')} />
 
             <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -31,23 +33,21 @@ export default function Create() {
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <Link
-                        href={route('utilisateurs.index')}
+                        href={route('eleveurs.index')}
                         className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 underline-offset-4 transition-colors hover:text-base-content hover:underline"
                     >
                         <span aria-hidden="true">←</span>
-                        Retour aux utilisateurs
+                        {t('eleveurs.create.back')}
                     </Link>
 
                     <p className="mt-8 text-sm text-base-content/45">
-                        Nouvel éleveur
+                        {t('eleveurs.create.eyebrow')}
                     </p>
                     <h1 className="mt-3 font-display text-[clamp(2.4rem,5vw,3.6rem)] leading-[1.03] tracking-[-0.02em]">
-                        Inscrire un éleveur.
+                        {t('eleveurs.create.heading')}
                     </h1>
                     <p className="mt-4 max-w-[54ch] text-sm leading-relaxed text-base-content/60">
-                        L'utilisateur est enregistré comme employé : il ne se
-                        connecte pas à l'application. Vous pourrez ensuite lui
-                        assigner plusieurs bovins.
+                        {t('eleveurs.create.description')}
                     </p>
                 </motion.div>
 
@@ -64,7 +64,10 @@ export default function Create() {
                 >
                     <div className="grid gap-6 sm:grid-cols-2">
                         <div>
-                            <InputLabel htmlFor="name" value="Nom complet" />
+                            <InputLabel
+                                htmlFor="name"
+                                value={t('eleveurs.create.name')}
+                            />
                             <TextInput
                                 id="name"
                                 value={data.name}
@@ -80,7 +83,10 @@ export default function Create() {
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="cin" value="Numéro CIN" />
+                            <InputLabel
+                                htmlFor="cin"
+                                value={t('eleveurs.create.cin')}
+                            />
                             <TextInput
                                 id="cin"
                                 value={data.cin}
@@ -94,15 +100,17 @@ export default function Create() {
                                 required
                             />
                             <p className="mt-1.5 text-xs text-base-content/45">
-                                Le CIN identifie l'utilisateur dans le registre
-                                et permet de le retrouver rapidement.
+                                {t('eleveurs.create.cinHelp')}
                             </p>
                             <InputError message={errors.cin} />
                         </div>
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="email" value="E-mail" />
+                        <InputLabel
+                            htmlFor="email"
+                            value={t('eleveurs.create.email')}
+                        />
                         <TextInput
                             id="email"
                             type="email"
@@ -116,7 +124,7 @@ export default function Create() {
                             required
                         />
                         <p className="mt-1.5 text-xs text-base-content/45">
-                            Cette adresse sert d'identifiant de connexion.
+                            {t('eleveurs.create.emailHelp')}
                         </p>
                         <InputError message={errors.email} />
                     </div>
@@ -124,14 +132,14 @@ export default function Create() {
                     <div className="flex flex-wrap items-center gap-3 border-t border-base-content/15 pt-7">
                         <PrimaryButton disabled={processing}>
                             {processing
-                                ? 'Enregistrement…'
-                                : "Ajouter l'utilisateur"}
+                                ? t('eleveurs.create.saving')
+                                : t('eleveurs.create.submit')}
                         </PrimaryButton>
                         <Link
-                            href={route('utilisateurs.index')}
+                            href={route('eleveurs.index')}
                             className="btn btn-ghost h-11 rounded-full px-5 text-sm font-semibold normal-case text-base-content/55 hover:bg-base-200 hover:text-base-content"
                         >
-                            Annuler
+                            {t('eleveurs.create.cancel')}
                         </Link>
                     </div>
                 </motion.form>

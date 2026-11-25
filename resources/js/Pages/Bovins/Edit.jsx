@@ -3,6 +3,8 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
+import { toLines } from '@/lib/lines';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -13,12 +15,13 @@ function formatDateInput(value) {
 
 export default function Edit({ bovin }) {
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const { data, setData, put, processing, errors } = useForm({
         sexe: bovin.sexe ?? '',
         date_naissance: formatDateInput(bovin.date_naissance),
         date_deces: formatDateInput(bovin.date_deces),
-        signe_particulier: (bovin.signe_particulier ?? []).join('\n'),
-        dossier_sante: (bovin.dossier_sante ?? []).join('\n'),
+        signe_particulier: toLines(bovin.signe_particulier).join('\n'),
+        dossier_sante: toLines(bovin.dossier_sante).join('\n'),
     });
 
     const submit = (event) => {
@@ -36,7 +39,11 @@ export default function Edit({ bovin }) {
 
     return (
         <AuthenticatedLayout>
-            <Head title={`Modifier ${bovin.numero_boucle}`} />
+            <Head
+                title={t('bovins.edit.title', {
+                    boucle: bovin.numero_boucle,
+                })}
+            />
 
             <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -49,14 +56,16 @@ export default function Edit({ bovin }) {
                         className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 underline-offset-4 transition-colors hover:text-base-content hover:underline"
                     >
                         <span aria-hidden="true">←</span>
-                        Retour à la fiche
+                        {t('bovins.edit.back')}
                     </Link>
 
                     <p className="mt-8 text-sm text-base-content/45">
-                        Modification de la fiche
+                        {t('bovins.edit.eyebrow')}
                     </p>
                     <h1 className="mt-3 font-display text-[clamp(2.4rem,5vw,3.6rem)] leading-[1.03] tracking-[-0.02em]">
-                        Modifier {bovin.numero_boucle}.
+                        {t('bovins.edit.heading', {
+                            boucle: bovin.numero_boucle,
+                        })}
                     </h1>
                 </motion.div>
 
@@ -76,13 +85,15 @@ export default function Edit({ bovin }) {
                             <span className="font-display text-lg text-secondary">
                                 01
                             </span>
-                            <span className="text-sm font-semibold">Sexe</span>
+                            <span className="text-sm font-semibold">
+                                {t('bovins.edit.sex')}
+                            </span>
                         </legend>
 
                         <div className="mt-7 grid grid-cols-2 gap-2">
                             {[
-                                ['femelle', 'Femelle'],
-                                ['male', 'Mâle'],
+                                ['femelle', t('bovins.index.female')],
+                                ['male', t('bovins.index.male')],
                             ].map(([value, label]) => (
                                 <label
                                     key={value}
@@ -115,7 +126,7 @@ export default function Edit({ bovin }) {
                                 02
                             </span>
                             <span className="text-sm font-semibold">
-                                Dates
+                                {t('bovins.edit.dates')}
                             </span>
                         </legend>
 
@@ -123,7 +134,7 @@ export default function Edit({ bovin }) {
                             <div>
                                 <InputLabel
                                     htmlFor="date_naissance"
-                                    value="Date de naissance"
+                                    value={t('bovins.edit.birthDate')}
                                 />
                                 <TextInput
                                     id="date_naissance"
@@ -145,7 +156,7 @@ export default function Edit({ bovin }) {
                             <div>
                                 <InputLabel
                                     htmlFor="date_deces"
-                                    value="Date de décès (facultatif)"
+                                    value={t('bovins.edit.deathDate')}
                                 />
                                 <TextInput
                                     id="date_deces"
@@ -168,7 +179,7 @@ export default function Edit({ bovin }) {
                                 03
                             </span>
                             <span className="text-sm font-semibold">
-                                Signes et santé
+                                {t('bovins.edit.signsHealth')}
                             </span>
                         </legend>
 
@@ -176,7 +187,7 @@ export default function Edit({ bovin }) {
                             <div>
                                 <InputLabel
                                     htmlFor="signe_particulier"
-                                    value="Signes particuliers (facultatif)"
+                                    value={t('bovins.edit.signs')}
                                 />
                                 <textarea
                                     id="signe_particulier"
@@ -196,7 +207,7 @@ export default function Edit({ bovin }) {
                             <div>
                                 <InputLabel
                                     htmlFor="dossier_sante"
-                                    value="Dossier de santé (facultatif)"
+                                    value={t('bovins.edit.health')}
                                 />
                                 <textarea
                                     id="dossier_sante"
@@ -218,14 +229,14 @@ export default function Edit({ bovin }) {
                     <div className="flex flex-wrap items-center gap-3 border-t border-base-content/15 pt-7">
                         <PrimaryButton disabled={processing}>
                             {processing
-                                ? 'Enregistrement…'
-                                : 'Enregistrer les modifications'}
+                                ? t('bovins.edit.saving')
+                                : t('bovins.edit.submit')}
                         </PrimaryButton>
                         <Link
                             href={route('bovins.show', bovin.id)}
                             className="btn btn-ghost h-11 rounded-full px-5 text-sm font-semibold normal-case text-base-content/55 hover:bg-base-200 hover:text-base-content"
                         >
-                            Annuler
+                            {t('bovins.edit.cancel')}
                         </Link>
                     </div>
                 </motion.form>

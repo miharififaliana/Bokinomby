@@ -2,6 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import { useTranslation } from '@/lib/i18n';
 import { Link, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const page = usePage();
     const user = page.props.auth.user;
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
@@ -41,7 +43,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </Link>
                             <span className="hidden h-5 w-px bg-base-content/15 sm:block" />
                             <span className="hidden text-[11px] tracking-[0.14em] text-base-content/45 sm:block">
-                                REGISTRE BOVIN
+                                {t('nav.brandTagline')}
                             </span>
                         </div>
 
@@ -50,25 +52,25 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route('dashboard')}
                                 active={route().current('dashboard')}
                             >
-                                Tableau de bord
+                                {t('nav.dashboard')}
                             </NavLink>
                             <NavLink
                                 href={route('bovins.index')}
                                 active={route().current('bovins.*')}
                             >
-                                Registre
+                                {t('nav.registry')}
                             </NavLink>
                             <NavLink
-                                href={route('utilisateurs.index')}
-                                active={route().current('utilisateurs.*')}
+                                href={route('eleveurs.index')}
+                                active={route().current('eleveurs.*')}
                             >
-                                Éleveurs
+                                {t('nav.breeders')}
                             </NavLink>
                             <NavLink
                                 href={route('profile.edit')}
                                 active={route().current('profile.*')}
                             >
-                                Profil
+                                {t('nav.profile')}
                             </NavLink>
 
                             <div className="ms-4 border-s border-base-content/10 ps-4">
@@ -111,14 +113,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Mon profil
+                                            {t('nav.myProfile')}
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Se déconnecter
+                                            {t('nav.logout')}
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -134,8 +136,8 @@ export default function AuthenticatedLayout({ header, children }) {
                             className="btn btn-ghost btn-sm h-10 w-10 rounded-full p-0 sm:hidden"
                             aria-label={
                                 showingNavigationDropdown
-                                    ? 'Fermer le menu'
-                                    : 'Ouvrir le menu'
+                                    ? t('nav.closeMenu')
+                                    : t('nav.openMenu')
                             }
                             aria-expanded={showingNavigationDropdown}
                         >
@@ -187,25 +189,25 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
                                 >
-                                    Tableau de bord
+                                    {t('nav.dashboard')}
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink
                                     href={route('bovins.index')}
                                     active={route().current('bovins.*')}
                                 >
-                                    Registre bovin
+                                    {t('nav.registryBovin')}
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink
-                                    href={route('utilisateurs.index')}
-                                    active={route().current('utilisateurs.*')}
+                                    href={route('eleveurs.index')}
+                                    active={route().current('eleveurs.*')}
                                 >
-                                    Utilisateurs
+                                    {t('nav.breeders')}
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink
                                     href={route('profile.edit')}
                                     active={route().current('profile.*')}
                                 >
-                                    Profil
+                                    {t('nav.profile')}
                                 </ResponsiveNavLink>
                             </div>
 
@@ -230,7 +232,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href={route('logout')}
                                         as="button"
                                     >
-                                        Se déconnecter
+                                        {t('nav.logout')}
                                     </ResponsiveNavLink>
                                 </div>
                             </div>

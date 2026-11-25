@@ -17,6 +17,10 @@
         @apply bg-base-100 font-sans text-base-content antialiased;
     }
 
+    [data-theme='bokinomby-dark'] {
+        color-scheme: dark;
+    }
+
     ::selection {
         @apply bg-primary text-primary-content;
     }

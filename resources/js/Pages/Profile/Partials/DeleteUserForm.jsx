@@ -4,10 +4,12 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import { useTranslation } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 export default function DeleteUserForm({ className = '' }) {
+    const { t } = useTranslation();
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef();
 
@@ -49,35 +51,32 @@ export default function DeleteUserForm({ className = '' }) {
         <section className={`space-y-6 ${className}`}>
             <header>
                 <h2 className="font-display text-2xl tracking-tight text-error">
-                    Supprimer le compte
+                    {t('profile.delete.title')}
                 </h2>
 
                 <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-base-content/60">
-                    La suppression est définitive. Les données rattachées à
-                    votre compte seront perdues. Téléchargez ce que vous
-                    souhaitez conserver avant de continuer.
+                    {t('profile.delete.description')}
                 </p>
             </header>
 
             <DangerButton onClick={confirmUserDeletion}>
-                Supprimer mon compte
+                {t('profile.delete.submit')}
             </DangerButton>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
                 <form onSubmit={deleteUser} className="p-6 sm:p-8">
                     <h2 className="font-display text-2xl tracking-tight">
-                        Confirmer la suppression
+                        {t('profile.delete.confirmTitle')}
                     </h2>
 
                     <p className="mt-2 text-sm leading-relaxed text-base-content/60">
-                        Cette action est irréversible. Saisissez votre mot de
-                        passe pour supprimer définitivement votre compte.
+                        {t('profile.delete.confirmDescription')}
                     </p>
 
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="password"
-                            value="Mot de passe"
+                            value={t('profile.delete.password')}
                             className="sr-only"
                         />
 
@@ -92,7 +91,9 @@ export default function DeleteUserForm({ className = '' }) {
                             }
                             className="mt-1 block w-full"
                             isFocused
-                            placeholder="Votre mot de passe"
+                            placeholder={t(
+                                'profile.delete.passwordPlaceholder',
+                            )}
                         />
 
                         <InputError message={errors.password} />
@@ -100,13 +101,13 @@ export default function DeleteUserForm({ className = '' }) {
 
                     <div className="mt-7 flex justify-end gap-3">
                         <SecondaryButton onClick={closeModal}>
-                            Annuler
+                            {t('profile.delete.cancel')}
                         </SecondaryButton>
 
                         <DangerButton disabled={processing}>
                             {processing
-                                ? 'Suppression…'
-                                : 'Supprimer définitivement'}
+                                ? t('profile.delete.deleting')
+                                : t('profile.delete.confirm')}
                         </DangerButton>
                     </div>
                 </form>

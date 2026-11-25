@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -16,46 +17,76 @@ function initials(name = '') {
         .toUpperCase();
 }
 
-function BarChart({ labels, values }) {
-    const max = Math.max(...values, 1);
+const DISTRIBUTION_LIMIT = 8;
+
+function DistributionList({ labels, counts, t }) {
+    const [expanded, setExpanded] = useState(false);
+    const rows = labels
+        .map((label, index) => ({ label, count: counts[index] ?? 0 }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    const max = Math.max(...rows.map((row) => row.count), 1);
+    const visible = expanded ? rows : rows.slice(0, DISTRIBUTION_LIMIT);
 
     return (
-        <div className="mt-6 overflow-x-auto">
-            <div className="flex items-end gap-2" style={{ minHeight: '12rem' }}>
-                {labels.map((label, index) => {
-                    const value = values[index] ?? 0;
-                    const height = Math.round((value / max) * 100);
+        <div className="mt-6">
+            <ol className="divide-y divide-base-content/10 border-t border-base-content/10">
+                {visible.map((row) => {
+                    const share = total
+                        ? Math.round((row.count / total) * 100)
+                        : 0;
 
                     return (
-                        <div
-                            key={`${label}-${index}`}
-                            className="flex min-w-[2.75rem] flex-col items-center justify-end"
-                        >
-                            <span className="mb-1 text-xs font-medium">
-                                {value}
-                            </span>
-                            <div
-                                className="w-7 rounded-t-md bg-primary transition-all"
-                                style={{
-                                    height: `${Math.max(height, value ? 6 : 2)}%`,
-                                    minHeight: value ? '0.375rem' : '0.125rem',
-                                }}
-                            />
-                            <span
-                                className="mt-2 w-16 truncate text-center text-[10px] text-base-content/55"
-                                title={label}
-                            >
-                                {label}
-                            </span>
-                        </div>
+                        <li key={row.label} className="py-2.5">
+                            <div className="flex items-baseline justify-between gap-4">
+                                <span
+                                    className="truncate text-sm"
+                                    title={row.label}
+                                >
+                                    {row.label}
+                                </span>
+                                <span className="shrink-0 text-xs tabular-nums text-base-content/55">
+                                    {row.count}
+                                    <span className="text-base-content/35">
+                                        {' · '}
+                                        {share}%
+                                    </span>
+                                </span>
+                            </div>
+                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-base-200">
+                                <div
+                                    className="h-full rounded-full bg-primary transition-all"
+                                    style={{
+                                        width: `${Math.max(
+                                            (row.count / max) * 100,
+                                            row.count ? 2 : 0,
+                                        )}%`,
+                                    }}
+                                />
+                            </div>
+                        </li>
                     );
                 })}
-            </div>
+            </ol>
+
+            {rows.length > DISTRIBUTION_LIMIT && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((value) => !value)}
+                    className="mt-4 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                >
+                    {expanded
+                        ? t('dashboard.distribution.showLess')
+                        : t('dashboard.distribution.showAll', {
+                              count: rows.length,
+                          })}
+                </button>
+            )}
         </div>
     );
 }
 
-function VitalChart({ years, born, deaths, metric }) {
+function VitalChart({ years, born, deaths, metric, t }) {
     const showBorn = metric !== 'deaths';
     const showDeaths = metric !== 'born';
     const relevant = years.map((_, index) => {
@@ -133,13 +164,13 @@ function VitalChart({ years, born, deaths, metric }) {
                 {showBorn && (
                     <span className="inline-flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-success" />
-                        Nés
+                        {t('dashboard.evolution.born')}
                     </span>
                 )}
                 {showDeaths && (
                     <span className="inline-flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-error" />
-                        Morts
+                        {t('dashboard.evolution.deaths')}
                     </span>
                 )}
             </div>
@@ -150,6 +181,7 @@ function VitalChart({ years, born, deaths, metric }) {
 export default function Dashboard() {
     const user = usePage().props.auth.user;
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const firstName = user.name.split(' ')[0];
 
     const [geoLevel, setGeoLevel] = useState('province');
@@ -186,7 +218,7 @@ export default function Dashboard() {
 
     const loadVital = () => {
         if (startYear > endYear) {
-            setVitalError('L’année de début doit précéder l’année de fin.');
+            setVitalError(t('dashboard.evolution.startAfterEnd'));
             return;
         }
         setVitalError('');
@@ -210,7 +242,7 @@ export default function Dashboard() {
 
     return (
         <AuthenticatedLayout>
-            <Head title="Tableau de bord" />
+            <Head title={t('dashboard.title')} />
 
             <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -219,14 +251,13 @@ export default function Dashboard() {
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <p className="text-sm text-base-content/45">
-                        Tableau de bord
+                        {t('dashboard.eyebrow')}
                     </p>
                     <h1 className="mt-3 font-display text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] tracking-[-0.02em]">
-                        Bonjour, {firstName}.
+                        {t('dashboard.greeting', { name: firstName })}
                     </h1>
                     <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-base-content/60">
-                        Visualisez la répartition du cheptel par découpage
-                        administratif et son évolution dans le temps.
+                        {t('dashboard.description')}
                     </p>
                 </motion.div>
 
@@ -234,10 +265,10 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
                             <h2 className="text-sm font-semibold text-base-content/45">
-                                Répartition du cheptel
+                                {t('dashboard.distribution.title')}
                             </h2>
                             <p className="mt-1 text-xs text-base-content/55">
-                                Nombre de bovins par niveau géographique.
+                                {t('dashboard.distribution.description')}
                             </p>
                         </div>
                         <select
@@ -247,22 +278,33 @@ export default function Dashboard() {
                             }
                             className="select select-bordered h-11 rounded-xl border-base-content/20 bg-base-100 text-sm"
                         >
-                            <option value="province">Province</option>
-                            <option value="region">Région</option>
-                            <option value="district">District</option>
+                            <option value="province">
+                                {t('dashboard.distribution.province')}
+                            </option>
+                            <option value="region">
+                                {t('dashboard.distribution.region')}
+                            </option>
+                            <option value="district">
+                                {t('dashboard.distribution.district')}
+                            </option>
                         </select>
                     </div>
 
                     {geoLoading ? (
                         <p className="mt-8 text-sm text-base-content/55">
-                            Chargement…
+                            {t('dashboard.loading')}
                         </p>
                     ) : geo.labels.length === 0 ? (
                         <p className="mt-8 text-sm text-base-content/55">
-                            Aucune donnée.
+                            {t('dashboard.noData')}
                         </p>
                     ) : (
-                        <BarChart labels={geo.labels} values={geo.counts} />
+                        <DistributionList
+                            key={geoLevel}
+                            labels={geo.labels}
+                            counts={geo.counts}
+                            t={t}
+                        />
                     )}
                 </section>
 
@@ -270,16 +312,16 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
                             <h2 className="text-sm font-semibold text-base-content/45">
-                                Évolution du cheptel
+                                {t('dashboard.evolution.title')}
                             </h2>
                             <p className="mt-1 text-xs text-base-content/55">
-                                Bovins nés et/ou morts par année.
+                                {t('dashboard.evolution.description')}
                             </p>
                         </div>
                         <div className="flex flex-wrap items-end gap-3">
                             <div>
                                 <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
-                                    Afficher
+                                    {t('dashboard.evolution.metric')}
                                 </label>
                                 <select
                                     value={metric}
@@ -288,14 +330,20 @@ export default function Dashboard() {
                                     }
                                     className="select select-bordered mt-2 h-11 rounded-xl border-base-content/20 bg-base-100 text-sm"
                                 >
-                                    <option value="born">Nés</option>
-                                    <option value="deaths">Morts</option>
-                                    <option value="both">Les deux</option>
+                                    <option value="born">
+                                        {t('dashboard.evolution.born')}
+                                    </option>
+                                    <option value="deaths">
+                                        {t('dashboard.evolution.deaths')}
+                                    </option>
+                                    <option value="both">
+                                        {t('dashboard.evolution.both')}
+                                    </option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
-                                    De
+                                    {t('dashboard.evolution.from')}
                                 </label>
                                 <input
                                     type="number"
@@ -310,7 +358,7 @@ export default function Dashboard() {
                             </div>
                             <div>
                                 <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/45">
-                                    À
+                                    {t('dashboard.evolution.to')}
                                 </label>
                                 <input
                                     type="number"
@@ -328,8 +376,8 @@ export default function Dashboard() {
                                 className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                             >
                                 {vitalLoading
-                                    ? 'Chargement…'
-                                    : 'Mettre à jour'}
+                                    ? t('dashboard.loading')
+                                    : t('dashboard.evolution.update')}
                             </button>
                         </div>
                     </div>
@@ -342,11 +390,11 @@ export default function Dashboard() {
 
                     {vitalLoading ? (
                         <p className="mt-8 text-sm text-base-content/55">
-                            Chargement…
+                            {t('dashboard.loading')}
                         </p>
                     ) : vital.years.length === 0 ? (
                         <p className="mt-8 text-sm text-base-content/55">
-                            Aucune donnée.
+                            {t('dashboard.noData')}
                         </p>
                     ) : (
                         <VitalChart
@@ -354,6 +402,7 @@ export default function Dashboard() {
                             born={vital.born}
                             deaths={vital.deaths}
                             metric={metric}
+                            t={t}
                         />
                     )}
                 </section>

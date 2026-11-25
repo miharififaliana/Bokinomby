@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useState } from 'react';
@@ -23,18 +24,19 @@ function formatDate(value) {
     return `${day}/${month}/${year}`;
 }
 
-function sexLabel(sexe) {
-    return sexe === 'male' ? 'Mâle' : 'Femelle';
+function sexLabel(sexe, t) {
+    return sexe === 'male' ? t('bovins.index.male') : t('bovins.index.female');
 }
 
 export default function Show({ utilisateur, bovins, stats, success }) {
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const hasBovins = bovins.data.length > 0;
     const { delete: destroy, processing: deleting } = useForm();
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     const handleDelete = () => {
-        destroy(route('utilisateurs.destroy', utilisateur.id));
+        destroy(route('eleveurs.destroy', utilisateur.id));
     };
     const createHref = route('bovins.create', {
         proprietaire: utilisateur.id,
@@ -51,11 +53,11 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <Link
-                        href={route('utilisateurs.index')}
+                        href={route('eleveurs.index')}
                         className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 underline-offset-4 transition-colors hover:text-base-content hover:underline"
                     >
                         <span aria-hidden="true">←</span>
-                        Tous les éleveurs
+                        {t('eleveurs.show.back')}
                     </Link>
 
                     <div className="mt-8 flex flex-wrap items-start justify-between gap-6">
@@ -66,7 +68,7 @@ export default function Show({ utilisateur, bovins, stats, success }) {
 
                             <div>
                                 <p className="text-sm text-base-content/45">
-                                    Éleveur
+                                    {t('eleveurs.show.eyebrow')}
                                 </p>
                                 <h1 className="mt-2 font-display text-[clamp(2.2rem,4.6vw,3.6rem)] leading-[1.03] tracking-[-0.02em]">
                                     {utilisateur.name}
@@ -74,8 +76,9 @@ export default function Show({ utilisateur, bovins, stats, success }) {
 
                                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-base-content/55">
                                     <span className="font-medium text-base-content/70">
-                                        CIN{' '}
-                                        {utilisateur.cin || 'non renseigné'}
+                                        {t('eleveurs.show.cin')}{' '}
+                                        {utilisateur.cin ||
+                                            t('eleveurs.show.cinMissing')}
                                     </span>
                                     {utilisateur.email && (
                                         <a
@@ -91,34 +94,33 @@ export default function Show({ utilisateur, bovins, stats, success }) {
 
                         <div className="flex flex-wrap items-center gap-2">
                             <Link
-                                href={route('utilisateurs.edit', utilisateur.id)}
+                                href={route('eleveurs.edit', utilisateur.id)}
                                 className="btn btn-outline h-11 rounded-full border-base-content/20 px-5 text-sm font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                             >
-                                Modifier
+                                {t('eleveurs.show.edit')}
                             </Link>
                             <Link
                                 href={createHref}
                                 className="btn btn-primary h-11 rounded-full px-6 text-sm font-semibold normal-case"
                             >
-                                Assigner un bovin
+                                {t('eleveurs.show.assign')}
                             </Link>
                             <button
                                 type="button"
                                 onClick={() => setConfirmDelete(true)}
                                 className="btn btn-error btn-outline h-11 rounded-full px-5 text-sm font-semibold normal-case"
                             >
-                                Supprimer
+                                {t('eleveurs.show.delete')}
                             </button>
                         </div>
 
                         {confirmDelete && (
                             <div className="mt-6 rounded-2xl border border-error/30 bg-error/10 px-5 py-4 text-sm text-base-content/70">
                                 <p className="font-medium text-error">
-                                    Supprimer cet éleveur ?
+                                    {t('eleveurs.show.deleteTitle')}
                                 </p>
                                 <p className="mt-1 leading-relaxed">
-                                    Cette action supprimera également ses bovins
-                                    assignés. Confirmez pour continuer.
+                                    {t('eleveurs.show.deleteText')}
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <button
@@ -128,15 +130,17 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                                         className="btn btn-error h-10 rounded-full px-5 text-sm font-semibold normal-case"
                                     >
                                         {deleting
-                                            ? 'Suppression…'
-                                            : 'Confirmer la suppression'}
+                                            ? t('eleveurs.show.deleting')
+                                            : t(
+                                                  'eleveurs.show.confirmDelete',
+                                              )}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setConfirmDelete(false)}
                                         className="btn btn-ghost h-10 rounded-full px-5 text-sm font-semibold normal-case"
                                     >
-                                        Annuler
+                                        {t('eleveurs.show.cancel')}
                                     </button>
                                 </div>
                             </div>
@@ -157,9 +161,9 @@ export default function Show({ utilisateur, bovins, stats, success }) {
 
                 <dl className="mt-10 grid grid-cols-3 border-y border-base-content/15">
                     {[
-                        ['Boucles', stats.total],
-                        ['Femelles', stats.femelles],
-                        ['Mâles', stats.males],
+                        [t('eleveurs.show.statsBoucles'), stats.total],
+                        [t('eleveurs.show.statsFemelles'), stats.femelles],
+                        [t('eleveurs.show.statsMales'), stats.males],
                     ].map(([label, value], index) => (
                         <div
                             key={label}
@@ -185,11 +189,17 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                             id="cheptel-heading"
                             className="text-sm font-semibold text-base-content/45"
                         >
-                            Bovins de {utilisateur.name}
+                            {t('eleveurs.show.bovinsHeading', {
+                                name: utilisateur.name,
+                            })}
                         </h2>
                         {hasBovins && (
                             <p className="text-xs text-base-content/45">
-                                {bovins.from}–{bovins.to} sur {bovins.total}
+                                {t('eleveurs.show.count', {
+                                    from: bovins.from,
+                                    to: bovins.to,
+                                    total: bovins.total,
+                                })}
                             </p>
                         )}
                     </div>
@@ -208,8 +218,8 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                                                 {bovin.numero_boucle}
                                             </p>
                                             <p className="mt-0.5 text-xs text-base-content/55">
-                                                {sexLabel(bovin.sexe)} ·
-                                                naissance{' '}
+                                                {sexLabel(bovin.sexe, t)} ·{' '}
+                                                {t('eleveurs.show.born')}{' '}
                                                 {formatDate(
                                                     bovin.date_naissance,
                                                 )}
@@ -245,8 +255,8 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                                                 }`}
                                             />
                                             {bovin.date_deces
-                                                ? 'Mort'
-                                                : 'Vivant'}
+                                                ? t('eleveurs.show.dead')
+                                                : t('eleveurs.show.alive')}
                                         </span>
                                     </Link>
                                 ))}
@@ -254,7 +264,7 @@ export default function Show({ utilisateur, bovins, stats, success }) {
 
                             {bovins.last_page > 1 && (
                                 <nav
-                                    aria-label="Pagination des bovins de l'utilisateur"
+                                    aria-label={t('eleveurs.show.pagination')}
                                     className="mt-6 flex items-center justify-between gap-4"
                                 >
                                     {bovins.prev_page_url ? (
@@ -263,15 +273,17 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                                             preserveScroll
                                             className="btn btn-outline h-10 rounded-full border-base-content/20 px-5 text-xs font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                         >
-                                            Précédent
+                                            {t('eleveurs.show.previous')}
                                         </Link>
                                     ) : (
                                         <span />
                                     )}
 
                                     <p className="text-xs text-base-content/45">
-                                        Page {bovins.current_page} sur{' '}
-                                        {bovins.last_page}
+                                        {t('eleveurs.show.page', {
+                                            current: bovins.current_page,
+                                            last: bovins.last_page,
+                                        })}
                                     </p>
 
                                     {bovins.next_page_url ? (
@@ -280,7 +292,7 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                                             preserveScroll
                                             className="btn btn-outline h-10 rounded-full border-base-content/20 px-5 text-xs font-semibold normal-case hover:border-base-content/40 hover:bg-base-200"
                                         >
-                                            Suivant
+                                            {t('eleveurs.show.next')}
                                         </Link>
                                     ) : (
                                         <span />
@@ -291,18 +303,16 @@ export default function Show({ utilisateur, bovins, stats, success }) {
                     ) : (
                         <div className="mt-3 rounded-[2rem] border border-dashed border-base-content/20 px-6 py-12 text-center">
                             <p className="font-display text-2xl tracking-tight">
-                                Aucun bovin assigné.
+                                {t('eleveurs.show.noBovinsTitle')}
                             </p>
                             <p className="mx-auto mt-2 max-w-[42ch] text-sm leading-relaxed text-base-content/55">
-                                Cet utilisateur peut recevoir plusieurs bêtes.
-                                Ouvrez une fiche bovine pour lui en assigner
-                                une.
+                                {t('eleveurs.show.noBovinsText')}
                             </p>
                             <Link
                                 href={createHref}
                                 className="btn btn-primary mt-6 h-11 rounded-full px-6 text-sm font-semibold normal-case"
                             >
-                                Assigner un premier bovin
+                                {t('eleveurs.show.assignFirst')}
                             </Link>
                         </div>
                     )}

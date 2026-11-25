@@ -1,0 +1,447 @@
+COMPREHENSION DU PROJET BOKINOMBY
+=================================
+
+Objet
+-----
+Ce document explique les trois mecanismes suivants:
+1. localisation geographique et affichage de la carte;
+2. theme clair/sombre;
+3. traduction entre le francais et le malagasy.
+
+Il decrit les fichiers impliques, leurs relations et les algorithmes actuels.
+
+
+1. LOCALISATION GEOGRAPHIQUE ET MAP
+==================================
+
+1.1 Modele de donnees
+---------------------
+La localisation suit une hierarchie administrative a quatre niveaux:
+
+Province -> Region -> District -> Commune -> Bovin
+
+Les fichiers principaux sont:
+
+- database/migrations/2026_11_24_184946_create_provinces_table.php
+  Cree la table provinces avec id et nom.
+
+- database/migrations/2026_11_24_184951_create_regions_table.php
+  Cree la table regions avec province_id et nom.
+
+- database/migrations/2026_11_24_171054_create_districts_table.php
+  Cree initialement la table districts avec name.
+
+- database/migrations/2026_11_24_184956_add_region_id_to_districts_table.php
+  Relie district.region_id -> regions.id.
+
+- database/migrations/2026_11_24_182839_add_code_postal_to_districts_table.php
+  Ajoute districts.code_postal.
+
+- database/migrations/2026_11_24_171055_create_communes_table.php
+  Relie commune.district_id -> districts.id.
+
+- database/migrations/2026_11_24_213440_update_commune_id_on_bovins_table.php
+  Remplace anciennement quartier_id par commune_id dans la table bovins.
+
+- database/seeders/MadagascarGeographySeeder.php
+  Remplit les provinces, regions, districts et communes malgaches.
+
+- database/seeders/DatabaseSeeder.php
+  Appelle MadagascarGeographySeeder puis DemoDataSeeder.
+
+Lors d'une nouvelle installation, les donnees geographiques sont chargees avec:
+php artisan migrate --seed
+ou:
+php artisan migrate
+php artisan db:seed
+
+
+1.2 Relations Eloquent
+----------------------
+- app/Models/Province.php
+  province.regions() retourne toutes les regions de la province.
+  province.districts() permet egalement de traverser les regions.
+
+- app/Models/Region.php
+  region.province() retourne sa province.
+  region.districts() retourne ses districts.
+
+- app/Models/District.php
+  district.region() retourne sa region.
+  district.communes() retourne ses communes.
+
+- app/Models/Commune.php
+  commune.district() retourne son district.
+  commune.bovins() retourne les bovins de la commune.
+
+- app/Models/Bovin.php
+  bovin.commune() retourne l'unique commune associee au bovin.
+  La base de donnees contient donc commune_id sur le bovin.
+
+Les classes et les clefs etrangere sont reliees ainsi:
+
+Bovin.commune_id
+    -> Commune.id
+Commune.district_id
+    -> District.id
+District.region_id
+    -> Region.id
+Region.province_id
+    -> Province.id
+
+
+1.3 Formulaire de creation/modification
+---------------------------------------
+Les composants React sont:
+- resources/js/Pages/Bovins/Create.jsx
+- resources/js/Pages/Bovins/Edit.jsx
+
+Dans Create.jsx:
+- provinceId est garde dans l'etat React.
+- regionId est garde dans l'etat React.
+- districtId est garde dans l'etat React.
+- commune_id est garde dans le formulaire Inertia avec useForm.
+
+Algorithme des listes cascadees:
+1. Selectionner une province.
+2. Effacer les anciens regionId, districtId et commune_id.
+3. Trouver l'objet province dans provinces.
+4. Extraire province.regions.
+5. Selectionner une region.
+6. Effacer districtId et commune_id.
+7. Trouver la region dans regions.
+8. Extraire region.districts.
+9. Selectionner un district.
+10. Effacer commune_id.
+11. Extraire district.communes.
+12. Selectionner une commune.
+13. Donner son id dans data.commune_id.
+
+Les ensembles superieurs deviennent des listes desactivees tant qu'ils n'ont pas encore ete selectionnes.
+Par exemple, aucune region n'est disponible avant la selection d'une province.
+
+La creation du formulaire passe par:
+- routes/web.php: route POST /bovins vers BovinController.store
+- app/Http/Controllers/BovinController.php
+- app/Http/Requests/StoreBovinRequest.php
+
+BovinController.create() appelle provinces() puis envoie l'arbre complet
+Province -> Regions -> Districts -> Communes a Inertia.
+
+StoreBovinRequest.verifie notamment que commune_id existe dans la table communes.
+BovinController.store():
+1. valide les donnees par StoreBovinRequest;
+2. retrouve la commune;
+3. ouvre une transaction;
+4. cree le bovin;
+5. utilise le code postal du district pour generer numero_boucle;
+6. enregistre ce numero sous la forme code_postal-id;
+7. redirige vers la liste.
+
+
+1.4 Affichage de localisation et carte
+--------------------------------------
+Le composant est resources/js/Pages/Bovins/Show.jsx.
+Les donnees sont preparees par BovinController.show().
+
+L'algorithme backend:
+1. Charge Bovin avec proprietaire et commune.district.region.province.
+2. Recupere les objets commune, district, region et province.
+3. Construit map_query dans cet ordre:
+   commune, district, region, province, Madagascar
+4. Supprime les valeurs nulles.
+5. Joint les valeurs par des virgules.
+6. Envoie localisation et map_query a Inertia.
+
+Exemple de resultat:
+Talatamaty, Antananarivo Renivohitra, Analamanga, Antananarivo, Madagascar
+
+Dans Show.jsx:
+- mapSrc est un iframe Google Maps utilise en embed:
+  https://maps.google.com/maps?q=<map_query>&z=10&output=embed
+- mapHref est un lien Google Maps ouvrant une recherche externe:
+  https://www.google.com/maps/search/?api=1&query=<map_query>
+- encodeURIComponent protege les accents, espaces et virgules dans les URL.
+
+Important:
+- Il ne s'agit pas d'une integration Leaflet, Mapbox ou OpenStreetMap.
+- Il ne s'agit pas d'un stockage de latitude/longitude.
+- L'application geolocalise uniquement par recherche textuelle administrative.
+- Google Maps calcule la position affichee a partir du map_query.
+- Aucun SDK Map JavaScript n'est installe dans package.json.
+
+1.5 Hierarchie backend liee
+---------------------------
+routes/web.php
+  -> GET /bovins/{bovin}
+  -> BovinController.show()
+  -> relations Eloquent
+  -> props Inertia localisation
+  -> resources/js/Pages/Bovins/Show.jsx
+  -> iframe Google Maps
+
+
+2. SYSTEME DE THEME CLAIR/SOMBRE
+================================
+
+2.1 Fichiers principaux
+-----------------------
+- tailwind.config.js
+  Definit les deux themes daisyUI bokinomby et bokinomby-dark.
+
+- resources/css/app.css
+  Configure Tailwind/daisyUI et specialement le color-scheme en mode sombre.
+
+- resources/views/app.blade.php
+  Execute un script synchrone avant le chargement React pour eviter un flash
+  du mauvais theme.
+
+- resources/js/app.jsx
+  Applique le theme au demarrage React.
+
+- resources/js/lib/i18n.jsx
+  Contient PreferencesProvider, readTheme(), applyTheme(), setTheme et usePreferences.
+
+- resources/js/Pages/Profile/Edit.jsx
+  Propose les boutons Clair/Sombre sur la page Profil.
+
+
+2.2 Declaration des couleurs
+----------------------------
+tailwind.config.js definit:
+- bokinomby: theme clair;
+- bokinomby-dark: theme sombre.
+
+Ces noms sont differents des valeurs React light/dark:
+- light -> bokinomby
+- dark -> bokinomby-dark
+
+Le mapping est:
+
+THEMES = {
+  light: 'bokinomby',
+  dark: 'bokinomby-dark'
+}
+
+Les couleurs sont ensuite utilisees par les classes daisyUI/Tailwind:
+bg-base-100, bg-base-200, text-base-content, border-base-content, primary, etc.
+Le changement du seul attribut data-theme suffit donc a transformer l'apparence.
+
+
+2.3 Algorithme de lancement
+---------------------------
+resources/views/app.blade.php execute d'abord:
+1. Lire localStorage["bokinomby.theme"].
+2. Si la valeur est "dark", choisir bokinomby-dark.
+3. Sinon, si elle est "light", choisir bokinomby.
+4. Si aucune valeur n'est enregistre, lire prefers-color-scheme.
+5. Appliquer data-theme sur document.documentElement.
+6. Si localStorage est inaccessible, garder le comportement par defaut.
+
+resources/js/app.jsx applique ensuite la meme logique avant PreferencesProvider.
+
+
+2.4 Algorithme React
+--------------------
+readTheme():
+1. Retourne "light" si window n'existe pas.
+2. Lit localStorage["bokinomby.theme"].
+3. N'accepte que "light" ou "dark".
+4. Sinon, lit prefers-color-scheme du navigateur.
+5. Sinon, retourne "light".
+
+applyTheme(theme):
+1. Transforme light/dark en bokinomby/bokinomby-dark.
+2. Attribue cet identifiant a document.documentElement.data-theme.
+
+PreferencesProvider:
+1. Initialise theme avec readTheme().
+2. Expose theme, setTheme, locale et setLocale par React Context.
+3. Chaque changement de theme execute applyTheme(theme).
+4. Le choix est sauvegarde dans localStorage["bokinomby.theme"].
+
+La preference est donc locale au navigateur. Elle n'est pas envoyee ni sauvegardee
+dans la base de donnees utilisateur.
+
+
+2.5 Interface utilisateur
+-------------------------
+Dans resources/js/Pages/Profile/Edit.jsx:
+- un bouton appelle setTheme("light");
+- l'autre appelle setTheme("dark");
+- les deux lisent l'etat theme pour afficher lequel est actif.
+
+Un changement met automatiquement a jour data-theme sur toute la page.
+Les composants s'abonnent indirectement aux variables daisyUI sans recharger la page.
+
+
+3. SYSTEME DE TRADUCTION FRANCAIS/MALGACHE
+==========================================
+
+3.1 Fichiers principaux
+-----------------------
+- resources/js/lib/i18n.jsx
+  Contient les deux dictionnaires, l'algorithme de resolution des cles,
+  PreferencesProvider et useTranslation().
+
+- resources/js/app.jsx
+  Place PreferencesProvider autour de toutes les pages Inertia.
+
+- resources/js/Pages/Profile/Edit.jsx
+  Affiche les boutons Francais/Malgache.
+
+- resources/views/app.blade.php
+  Lit bokinomby.locale avant React pour placer lang="mg" si necessaire.
+
+- lang/fr.json
+- lang/fr/
+  Ressources Laravel PHP pour les traductions serveur du francais.
+
+La traduction de l'interface React actuelle ne s'appuie pas sur ces dossiers Laravel.
+Elle utilise un dictionnaire JavaScript interne: translations dans i18n.jsx.
+
+
+3.2 Les deux dictionnaires
+--------------------------
+LOCALES = ['fr', 'mg'].
+
+Chaque cle utilise une forme imbriquee:
+nav.dashboard
+profile.title
+bovins.create.location
+
+translations.fr contient les textes francais.
+translations.mg contient les textes malgaches correspondants.
+
+Exemple:
+t('profile.preferences.theme')
+
+En francais, lookup() trouve "Theme".
+En malgache, lookup() trouve l'intitule malgache present dans translations.mg.
+
+
+3.3 Algorithme translate()
+--------------------------
+translate(locale, key, replacements):
+1. Prendre translations[locale].
+2. Si cette locale est inconnue, prendre translations.fr.
+3. Decouper la cle sur les points.
+4. Parcourir l'objet dictionnaire niveau par niveau.
+5. Chercher d'abord dans le dictionnaire de la locale.
+6. Si la cle manque, chercher dans le dictionnaire francais.
+7. Si elle manque toujours, retourner la cle elle-meme.
+8. Remplacer les jetons tels que :name par les valeurs fournies.
+
+Exemple de remplacement:
+t('bovins.show.postalCode', { code: '101' })
+
+La fonction remplace :code par 101 dans le texte selectionne.
+
+
+3.4 Memoire de la langue
+------------------------
+readLocale():
+1. Retourne "fr" si window n'existe pas.
+2. Lit localStorage["bokinomby.locale"].
+3. N'accepte que "fr" ou "mg".
+4. Retourne "fr" si aucune valeur valide n'est trouvee.
+
+PreferencesProvider:
+1. Initialise locale avec readLocale().
+2. Lorsque locale change, documentElement.lang prend "fr" ou "mg".
+3. Sauvegarde la langue dans localStorage["bokinomby.locale"].
+
+Au premier chargement HTML, app.blade.php lit deja cette cle:
+- locale === "mg" -> <html lang="mg">
+- autrement, la langue HTML reste "fr".
+
+Comme pour le theme, la langue est locale au navigateur.
+Elle n'est pas actuellement sauvegardee dans la table users.
+
+
+3.5 Interface utilisateur
+-------------------------
+resources/js/Pages/Profile/Edit.jsx utilise usePreferences():
+- setLocale("fr") pour le francais;
+- setLocale("mg") pour le malgache.
+
+useTranslation() fournit:
+- t(key, replacements): traduit une cle;
+- locale: retourne fr ou mg.
+
+useTranslation() utilise useCallback sur locale.
+Chaque changement de locale declenche donc un nouveau rendu des composants
+qui lisent t ou locale.
+
+
+3.6 Pages utilisant la traduction
+----------------------------------
+La traduction est utilisee par plusieurs layouts/pages React, notamment:
+- resources/js/Layouts/AuthenticatedLayout.jsx
+- resources/js/Pages/Dashboard.jsx
+- resources/js/Pages/Profile/Edit.jsx
+- resources/js/Pages/Bovins/Create.jsx
+- resources/js/Pages/Bovins/Edit.jsx
+- resources/js/Pages/Bovins/Index.jsx
+- resources/js/Pages/Bovins/Show.jsx
+- resources/js/Pages/Eleveurs/*
+- resources/js/Pages/Utilisateurs/*
+
+Bovins/Show.jsx utilise aussi locale directement pour afficher les dates:
+- mg -> new Date().toLocaleDateString("mg")
+- autrement -> new Date().toLocaleDateString("fr-FR")
+
+
+3.7 Laravel/franco-malgache
+---------------------------
+Le projet contient lang/fr.json et lang/fr/, mais config/app.php utilise par
+defaut APP_LOCALE avec la valeur de secours "en".
+
+Il n'y a pas de dossier lang/mg visible dans le projet.
+De plus, aucun middleware ne change app()->setLocale() ou Session::locale.
+
+Consequences:
+- __(), les exceptions Laravel et les textes PHP utilisent le systeme Laravel
+  avec la locale serveur, potentiellement anglaise selon .env.
+- La langue Francais/Malgache visible dans l'interface React est geree entierement
+  par i18n.jsx, localStorage et le Context React.
+- Les deux mecanismes ne sont pas relies actuellement.
+
+
+4. RELATIONS GLOBALES
+=====================
+
+Route /bovins/create
+  -> BovinController.create
+  -> provinces() charge Province -> Region -> District -> Commune
+  -> Inertia vers Create.jsx
+  -> selection cascade
+  -> POST commune_id
+  -> validation StoreBovinRequest
+  -> BovinController.store
+  -> sauvegarde Bovin avec commune_id
+
+Route /bovins/{bovin}
+  -> BovinController.show
+  -> charge le chemin Commune -> District -> Region -> Province
+  -> construit localisation et map_query
+  -> Inertia vers Show.jsx
+  -> Google Maps embed
+
+Demarrage de React
+  -> app.blade.php lit theme/locale dans localStorage
+  -> app.jsx lit le theme puis PreferencesProvider
+  -> i18n.jsx lit langue/theme
+  -> toutes les pages React peuvent utiliser useTranslation/usePreferences
+
+
+5. LIMITES ACTUELLES
+====================
+
+1. Pas de latitude ni longitude en base.
+2. La carte Google utilise une requete textuelle, pas un objet cartographique local.
+3. La preference de theme n'est pas sauvegardee cote serveur.
+4. La preference de langue n'est pas sauvegardee cote serveur.
+5. Les cles de traduction absentes en malgache tombent automatiquement en francais.
+6. Certains textes PHP/Laravel peuvent rester en anglais ou francais selon config/app.php.
+7. Le dossier lang/fr existe, mais il n'y a pas de dossier lang/mg actuellement.

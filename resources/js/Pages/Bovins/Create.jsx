@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useTranslation } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useMemo, useState } from 'react';
@@ -38,6 +39,7 @@ export default function Create({
     selectedProprietaireId,
 }) {
     const reduceMotion = useReducedMotion();
+    const { t } = useTranslation();
     const { data, setData, post, processing, errors } = useForm({
         proprietaire_id: selectedProprietaireId
             ? String(selectedProprietaireId)
@@ -83,7 +85,11 @@ export default function Create({
         : 'AUTO';
 
     const sexeLabel =
-        data.sexe === 'male' ? 'Mâle' : data.sexe === 'femelle' ? 'Femelle' : '—';
+        data.sexe === 'male'
+            ? t('bovins.index.male')
+            : data.sexe === 'femelle'
+              ? t('bovins.index.female')
+              : '—';
 
     const proprietaire = utilisateurs.find(
         (item) => String(item.id) === data.proprietaire_id,
@@ -97,7 +103,7 @@ export default function Create({
 
     return (
         <AuthenticatedLayout>
-            <Head title="Enregistrer un bovin" />
+            <Head title={t('bovins.create.title')} />
 
             <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
                 <motion.div
@@ -110,20 +116,17 @@ export default function Create({
                         className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 underline-offset-4 transition-colors hover:text-base-content hover:underline"
                     >
                         <span aria-hidden="true">←</span>
-                        Retour au registre
+                        {t('bovins.create.back')}
                     </Link>
 
                     <p className="mt-8 text-sm text-base-content/45">
-                        Nouvelle fiche
+                        {t('bovins.create.eyebrow')}
                     </p>
                     <h1 className="mt-3 max-w-[16ch] font-display text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] tracking-[-0.02em]">
-                        Ouvrir la boucle d'une bête.
+                        {t('bovins.create.heading')}
                     </h1>
                     <p className="mt-4 max-w-[56ch] text-sm leading-relaxed text-base-content/60">
-                        Chaque bête appartient à un utilisateur. La boucle est
-                        générée automatiquement à partir du code postal du
-                        district et du numéro de l'animal ; choisissez sa
-                        localisation et complétez son dossier sanitaire.
+                        {t('bovins.create.description')}
                     </p>
                 </motion.div>
 
@@ -145,7 +148,7 @@ export default function Create({
                                     01
                                 </span>
                                 <span className="text-sm font-semibold">
-                                    Propriétaire
+                                    {t('bovins.create.ownerSection')}
                                 </span>
                             </legend>
 
@@ -154,16 +157,12 @@ export default function Create({
                                     role="alert"
                                     className="mt-7 rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4 text-sm leading-relaxed text-base-content/70"
                                 >
-                                    <p>
-                                        Aucun utilisateur n'est encore inscrit.
-                                        Créez d'abord son compte, puis revenez
-                                        assigner ses bovins.
-                                    </p>
+                                    <p>{t('bovins.create.noUsers')}</p>
                                     <Link
-                                        href={route('utilisateurs.create')}
+                                        href={route('eleveurs.create')}
                                         className="btn btn-primary mt-4 h-10 rounded-full px-5 text-xs font-semibold normal-case"
                                     >
-                                        Créer un utilisateur
+                                        {t('bovins.create.createUser')}
                                     </Link>
                                 </div>
                             ) : (
@@ -171,13 +170,15 @@ export default function Create({
                                     <div className="flex items-center justify-between gap-4">
                                         <InputLabel
                                             htmlFor="proprietaire_id"
-                                            value="Utilisateur propriétaire"
+                                            value={t(
+                                                'bovins.create.ownerLabel',
+                                            )}
                                         />
                                         <Link
-                                            href={route('utilisateurs.create')}
+                                            href={route('eleveurs.create')}
                                             className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
                                         >
-                                            Créer un utilisateur
+                                            {t('bovins.create.createUser')}
                                         </Link>
                                     </div>
 
@@ -195,7 +196,7 @@ export default function Create({
                                         required
                                     >
                                         <option value="" disabled>
-                                            Choisir un utilisateur
+                                            {t('bovins.create.chooseUser')}
                                         </option>
                                         {utilisateurs.map((item) => (
                                             <option
@@ -210,8 +211,7 @@ export default function Create({
                                         ))}
                                     </select>
                                     <p className="mt-1.5 text-xs text-base-content/45">
-                                        Un utilisateur peut posséder plusieurs
-                                        bovins.
+                                        {t('bovins.create.ownerHelp')}
                                     </p>
                                     <InputError
                                         message={errors.proprietaire_id}
@@ -226,20 +226,23 @@ export default function Create({
                                     02
                                 </span>
                                 <span className="text-sm font-semibold">
-                                    Identification
+                                    {t('bovins.create.identification')}
                                 </span>
                             </legend>
 
                             <div className="mt-7 grid gap-6 sm:grid-cols-2">
                                 <div className="sm:col-span-2">
                                     <span className="block text-[13px] font-semibold text-base-content/70">
-                                        Sexe
+                                        {t('bovins.create.sex')}
                                     </span>
 
                                     <div className="mt-2 grid grid-cols-2 gap-2">
                                         {[
-                                            ['femelle', 'Femelle'],
-                                            ['male', 'Mâle'],
+                                            [
+                                                'femelle',
+                                                t('bovins.index.female'),
+                                            ],
+                                            ['male', t('bovins.index.male')],
                                         ].map(([value, label]) => (
                                             <label
                                                 key={value}
@@ -275,7 +278,7 @@ export default function Create({
                                 <div>
                                     <InputLabel
                                         htmlFor="date_naissance"
-                                        value="Date de naissance"
+                                        value={t('bovins.create.birthDate')}
                                     />
                                     <TextInput
                                         id="date_naissance"
@@ -300,7 +303,7 @@ export default function Create({
                                 <div>
                                     <InputLabel
                                         htmlFor="date_deces"
-                                        value="Date de décès (facultatif)"
+                                        value={t('bovins.create.deathDate')}
                                     />
                                     <TextInput
                                         id="date_deces"
@@ -326,7 +329,7 @@ export default function Create({
                                     03
                                 </span>
                                 <span className="text-sm font-semibold">
-                                    Localisation
+                                    {t('bovins.create.location')}
                                 </span>
                             </legend>
 
@@ -335,16 +338,16 @@ export default function Create({
                                     role="alert"
                                     className="mt-7 rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4 text-sm leading-relaxed text-base-content/70"
                                 >
-                                    Aucune localisation n'est disponible.
-                                    Lancez <code>php artisan db:seed</code>{' '}
-                                    pour charger le découpage administratif.
+                                    {t('bovins.create.noLocation')}{' '}
+                                    <code>php artisan db:seed</code>{' '}
+                                    {t('bovins.create.noLocationAfter')}
                                 </div>
                             ) : (
                                 <div className="mt-7 grid gap-6 sm:grid-cols-2">
                                     <div>
                                         <InputLabel
                                             htmlFor="province"
-                                            value="Province"
+                                            value={t('bovins.create.province')}
                                         />
                                         <select
                                             id="province"
@@ -361,7 +364,9 @@ export default function Create({
                                             required
                                         >
                                             <option value="" disabled>
-                                                Choisir une province
+                                                {t(
+                                                    'bovins.create.chooseProvince',
+                                                )}
                                             </option>
                                             {provinces.map((item) => (
                                                 <option
@@ -377,7 +382,7 @@ export default function Create({
                                     <div>
                                         <InputLabel
                                             htmlFor="region"
-                                            value="Région"
+                                            value={t('bovins.create.region')}
                                         />
                                         <select
                                             id="region"
@@ -395,8 +400,12 @@ export default function Create({
                                         >
                                             <option value="" disabled>
                                                 {province
-                                                    ? 'Choisir une région'
-                                                    : "D'abord la province"}
+                                                    ? t(
+                                                          'bovins.create.chooseRegion',
+                                                      )
+                                                    : t(
+                                                          'bovins.create.firstProvince',
+                                                      )}
                                             </option>
                                             {regions.map((item) => (
                                                 <option
@@ -412,7 +421,7 @@ export default function Create({
                                     <div>
                                         <InputLabel
                                             htmlFor="district"
-                                            value="District"
+                                            value={t('bovins.create.district')}
                                         />
                                         <select
                                             id="district"
@@ -429,8 +438,12 @@ export default function Create({
                                         >
                                             <option value="" disabled>
                                                 {region
-                                                    ? 'Choisir un district'
-                                                    : "D'abord la région"}
+                                                    ? t(
+                                                          'bovins.create.chooseDistrict',
+                                                      )
+                                                    : t(
+                                                          'bovins.create.firstRegion',
+                                                      )}
                                             </option>
                                             {districts.map((item) => (
                                                 <option
@@ -449,7 +462,7 @@ export default function Create({
                                     <div>
                                         <InputLabel
                                             htmlFor="commune_id"
-                                            value="Commune"
+                                            value={t('bovins.create.commune')}
                                         />
                                         <select
                                             id="commune_id"
@@ -467,8 +480,12 @@ export default function Create({
                                         >
                                             <option value="" disabled>
                                                 {district
-                                                    ? 'Choisir une commune'
-                                                    : "D'abord le district"}
+                                                    ? t(
+                                                          'bovins.create.chooseCommune',
+                                                      )
+                                                    : t(
+                                                          'bovins.create.firstDistrict',
+                                                      )}
                                             </option>
                                             {communes.map((item) => (
                                                 <option
@@ -485,10 +502,7 @@ export default function Create({
                                     </div>
 
                                     <p className="text-xs leading-relaxed text-base-content/45 sm:col-span-2">
-                                        La boucle d'oreille sera générée à
-                                        l'enregistrement : code postal du
-                                        district + numéro individuel du bovin
-                                        (ex. 101-1).
+                                        {t('bovins.create.earTagNote')}
                                     </p>
                                 </div>
                             )}
@@ -500,7 +514,7 @@ export default function Create({
                                     04
                                 </span>
                                 <span className="text-sm font-semibold">
-                                    Signes et santé
+                                    {t('bovins.create.signsHealth')}
                                 </span>
                             </legend>
 
@@ -508,7 +522,7 @@ export default function Create({
                                 <div>
                                     <InputLabel
                                         htmlFor="signe_particulier"
-                                        value="Signes particuliers (facultatif)"
+                                        value={t('bovins.create.signs')}
                                     />
                                     <textarea
                                         id="signe_particulier"
@@ -525,8 +539,7 @@ export default function Create({
                                         }
                                     />
                                     <p className="mt-1.5 text-xs text-base-content/45">
-                                        Un signe par ligne, pour retrouver la
-                                        bête sans ambiguïté.
+                                        {t('bovins.create.signsHelp')}
                                     </p>
                                     <InputError
                                         message={errors.signe_particulier}
@@ -536,7 +549,7 @@ export default function Create({
                                 <div>
                                     <InputLabel
                                         htmlFor="dossier_sante"
-                                        value="Dossier de santé (facultatif)"
+                                        value={t('bovins.create.health')}
                                     />
                                     <textarea
                                         id="dossier_sante"
@@ -553,7 +566,7 @@ export default function Create({
                                         }
                                     />
                                     <p className="mt-1.5 text-xs text-base-content/45">
-                                        Une note de suivi par ligne.
+                                        {t('bovins.create.healthHelp')}
                                     </p>
                                     <InputError message={errors.dossier_sante} />
                                 </div>
@@ -565,14 +578,14 @@ export default function Create({
                                 disabled={processing || utilisateurs.length === 0}
                             >
                                 {processing
-                                    ? 'Enregistrement…'
-                                    : 'Enregistrer le bovin'}
+                                    ? t('bovins.create.saving')
+                                    : t('bovins.create.submit')}
                             </PrimaryButton>
                             <Link
                                 href={route('bovins.index')}
                                 className="btn btn-ghost h-11 rounded-full px-5 text-sm font-semibold normal-case text-base-content/55 hover:bg-base-200 hover:text-base-content"
                             >
-                                Annuler
+                                {t('bovins.create.cancel')}
                             </Link>
                         </div>
                     </motion.form>
@@ -595,35 +608,38 @@ export default function Create({
                         >
                             <EarTag
                                 number={numeroPreview}
-                                label="BOKINOMBY · NOUVELLE FICHE"
+                                label={t('bovins.create.tagLabel')}
                                 title={
                                     proprietaire
                                         ? proprietaire.name
-                                        : 'Propriétaire à préciser'
+                                        : t('bovins.create.tagOwner')
                                 }
                                 rows={[
-                                    ['Sexe', sexeLabel],
-                                    ['Naissance', formatDate(data.date_naissance)],
-                                    ['Commune', commune?.name ?? '—'],
-                                    ['District', district?.name ?? '—'],
+                                    [t('bovins.create.tagSex'), sexeLabel],
+                                    [
+                                        t('bovins.create.tagBirth'),
+                                        formatDate(data.date_naissance),
+                                    ],
+                                    [
+                                        t('bovins.create.tagCommune'),
+                                        commune?.name ?? '—',
+                                    ],
+                                    [
+                                        t('bovins.create.tagDistrict'),
+                                        district?.name ?? '—',
+                                    ],
                                 ]}
-                                footer="BOUCLE GÉNÉRÉE À L'ENREGISTREMENT"
+                                footer={t('bovins.create.tagFooter')}
                             />
                         </motion.div>
 
                         <div className="mx-auto mt-6 max-w-[20rem] border-t border-base-content/15 pt-5 text-xs leading-relaxed text-base-content/45">
-                            <p>
-                                La boucle est attribuée automatiquement par
-                                l'application, à partir du code postal du
-                                district choisi.
+                            <p>{t('bovins.create.aside1')}</p>
+                            <p className="mt-3">
+                                {t('bovins.create.aside2')}
                             </p>
                             <p className="mt-3">
-                                Un utilisateur peut recevoir plusieurs bovins :
-                                revenez sur sa fiche pour compléter son cheptel.
-                            </p>
-                            <p className="mt-3">
-                                Les signes particuliers et le dossier de santé
-                                pourront être complétés au fil des visites.
+                                {t('bovins.create.aside3')}
                             </p>
                         </div>
                     </aside>
